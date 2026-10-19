@@ -1,0 +1,21 @@
+# Phase 1 scope: the database only. The remaining services (api, worker, redis,
+# rea-runner, frontend) are added in Phase 0 and later phases.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-legacylift}
+      POSTGRES_USER: ${POSTGRES_USER:-legacylift}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-owner}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5544}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db_data:
