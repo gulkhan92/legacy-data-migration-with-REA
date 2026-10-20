@@ -5,3 +5,5 @@ __pycache__/
 .pytest_cache/
 node_modules/
 datasets/raw/
+backend/var/
+rea-runner/node_modules/

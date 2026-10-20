@@ -51,6 +51,8 @@ class Job(IdMixin, CreatedAtMixin, TenantMixin, Base):
     __tablename__ = "jobs"
 
     source_id: Mapped[uuid.UUID] = _fk("sources.id", ondelete="RESTRICT")
+    # Second file of a source with two parts (the assembly is source_id, its data file is data_source_id).
+    data_source_id: Mapped[uuid.UUID | None] = _fk("sources.id", nullable=True, ondelete="SET NULL")
     target_schema_id: Mapped[uuid.UUID | None] = _fk(
         "target_schemas.id", nullable=True, ondelete="SET NULL"
     )

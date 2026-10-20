@@ -1,0 +1,786 @@
+{
+  "description": "Canonical clinical schema: patients, encounters, conditions, medications and observations.",
+  "fields": [
+    {
+      "description": "Identifier of the patient record in the legacy system.",
+      "examples": [
+        "1",
+        "150",
+        "306"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "patient id",
+        "patient number",
+        "mrn",
+        "chart number"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "Given name of the patient.",
+      "examples": [
+        "Sharyn",
+        "Jose",
+        "Maria"
+      ],
+      "name": "first_name",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "forename",
+        "given name",
+        "first name"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "Family name of the patient.",
+      "examples": [
+        "Hagenes",
+        "Ortiz",
+        "Smith"
+      ],
+      "name": "last_name",
+      "pii": true,
+      "required": true,
+      "synonyms": [
+        "surname",
+        "family name",
+        "last name"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "Date of birth of the patient.",
+      "examples": [
+        "1951-04-12",
+        "1987-09-30",
+        "2003-01-15"
+      ],
+      "name": "birth_date",
+      "pii": true,
+      "required": true,
+      "synonyms": [
+        "date of birth",
+        "dob",
+        "birthdate",
+        "born"
+      ],
+      "table": "patients",
+      "type": "date"
+    },
+    {
+      "description": "Date on which the patient died, empty while the patient is alive.",
+      "examples": [
+        "2019-03-02",
+        "2021-11-18",
+        "2024-06-30"
+      ],
+      "name": "death_date",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "date of death",
+        "deceased date",
+        "dod"
+      ],
+      "table": "patients",
+      "type": "date"
+    },
+    {
+      "description": "Gender of the patient recorded as M or F.",
+      "examples": [
+        "M",
+        "F",
+        "F"
+      ],
+      "name": "gender",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "sex",
+        "gender code",
+        "male or female"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "Social security number of the patient.",
+      "examples": [
+        "999-10-8066",
+        "999-23-4411",
+        "999-77-0102"
+      ],
+      "name": "ssn",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "social security",
+        "national id",
+        "tax id"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "Street address where the patient lives.",
+      "examples": [
+        "663 Blick Plaza",
+        "12 Maple Avenue",
+        "88 Harbor Road"
+      ],
+      "name": "address",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "street",
+        "street address",
+        "home address",
+        "residence"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "City where the patient lives.",
+      "examples": [
+        "Milford",
+        "Boston",
+        "Worcester"
+      ],
+      "name": "city",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "town",
+        "city name",
+        "municipality"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "State where the patient lives.",
+      "examples": [
+        "Massachusetts",
+        "Massachusetts",
+        "Massachusetts"
+      ],
+      "name": "state",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "province",
+        "region",
+        "state name"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "Postal or ZIP code of the patient address.",
+      "examples": [
+        "01757",
+        "02134",
+        "01604"
+      ],
+      "name": "postal_code",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "zip",
+        "zip code",
+        "postcode"
+      ],
+      "table": "patients",
+      "type": "text"
+    },
+    {
+      "description": "True when the patient has died.",
+      "examples": [
+        "true",
+        "false",
+        "false"
+      ],
+      "name": "is_deceased",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "deceased",
+        "dead",
+        "expired",
+        "mortality flag"
+      ],
+      "table": "patients",
+      "type": "boolean"
+    },
+    {
+      "description": "Identifier of the encounter record in the legacy system.",
+      "examples": [
+        "1",
+        "3000",
+        "7242"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "encounter id",
+        "visit number",
+        "visit id",
+        "episode number"
+      ],
+      "table": "encounters",
+      "type": "text"
+    },
+    {
+      "description": "The patient who was seen, referring to the patient source key.",
+      "examples": [
+        "1",
+        "150",
+        "306"
+      ],
+      "name": "patient_id",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "patient",
+        "patient number",
+        "subject"
+      ],
+      "table": "encounters",
+      "type": "reference"
+    },
+    {
+      "description": "Date and time at which the encounter began.",
+      "examples": [
+        "2023-06-12T09:28:00Z",
+        "2024-01-05T14:10:00Z",
+        "2025-02-20T08:00:00Z"
+      ],
+      "name": "start_time",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "visit start",
+        "admission time",
+        "encounter date",
+        "started"
+      ],
+      "table": "encounters",
+      "type": "timestamp"
+    },
+    {
+      "description": "Date and time at which the encounter ended.",
+      "examples": [
+        "2023-06-12T09:43:00Z",
+        "2024-01-05T14:40:00Z",
+        "2025-02-20T08:15:00Z"
+      ],
+      "name": "end_time",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "visit end",
+        "discharge time",
+        "stopped",
+        "finished"
+      ],
+      "table": "encounters",
+      "type": "timestamp"
+    },
+    {
+      "description": "Kind of encounter such as ambulatory, emergency, inpatient or wellness.",
+      "examples": [
+        "ambulatory",
+        "emergency",
+        "wellness"
+      ],
+      "name": "encounter_class",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "visit type",
+        "class",
+        "encounter type",
+        "setting"
+      ],
+      "table": "encounters",
+      "type": "text"
+    },
+    {
+      "description": "Short description of the reason or kind of the encounter.",
+      "examples": [
+        "Encounter for problem",
+        "Well child visit",
+        "Emergency room admission"
+      ],
+      "name": "description",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "visit description",
+        "reason",
+        "summary",
+        "details"
+      ],
+      "table": "encounters",
+      "type": "text"
+    },
+    {
+      "description": "Total cost of the encounter in cents.",
+      "examples": [
+        "7500",
+        "14000",
+        "251540"
+      ],
+      "name": "total_cost_cents",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "cost",
+        "claim cost",
+        "charge",
+        "billed amount"
+      ],
+      "table": "encounters",
+      "type": "integer"
+    },
+    {
+      "description": "Identifier of the condition record in the legacy system.",
+      "examples": [
+        "1",
+        "2500",
+        "5094"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "condition id",
+        "diagnosis number",
+        "problem number"
+      ],
+      "table": "conditions",
+      "type": "text"
+    },
+    {
+      "description": "The patient who has the condition, referring to the patient source key.",
+      "examples": [
+        "1",
+        "150",
+        "306"
+      ],
+      "name": "patient_id",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "patient",
+        "patient number",
+        "subject"
+      ],
+      "table": "conditions",
+      "type": "reference"
+    },
+    {
+      "description": "The encounter in which the condition was recorded, referring to the encounter source key.",
+      "examples": [
+        "12",
+        "3000",
+        "7242"
+      ],
+      "name": "encounter_id",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "visit",
+        "encounter",
+        "visit number"
+      ],
+      "table": "conditions",
+      "type": "reference"
+    },
+    {
+      "description": "Clinical code that identifies the condition.",
+      "examples": [
+        "314529007",
+        "44054006",
+        "15777000"
+      ],
+      "name": "code",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "diagnosis code",
+        "snomed",
+        "icd",
+        "problem code"
+      ],
+      "table": "conditions",
+      "type": "text"
+    },
+    {
+      "description": "Plain language name of the condition.",
+      "examples": [
+        "Medication review due",
+        "Diabetes mellitus type 2",
+        "Prediabetes"
+      ],
+      "name": "description",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "diagnosis",
+        "problem",
+        "condition name",
+        "disease"
+      ],
+      "table": "conditions",
+      "type": "text"
+    },
+    {
+      "description": "Date on which the condition began.",
+      "examples": [
+        "2023-06-03",
+        "2020-02-11",
+        "2018-09-27"
+      ],
+      "name": "start_date",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "onset",
+        "onset date",
+        "diagnosed on",
+        "from"
+      ],
+      "table": "conditions",
+      "type": "date"
+    },
+    {
+      "description": "Date on which the condition was resolved, empty while it continues.",
+      "examples": [
+        "2025-06-14",
+        "2021-03-01",
+        "2022-12-05"
+      ],
+      "name": "stop_date",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "resolved",
+        "resolution date",
+        "ended",
+        "to"
+      ],
+      "table": "conditions",
+      "type": "date"
+    },
+    {
+      "description": "Identifier of the medication record in the legacy system.",
+      "examples": [
+        "1",
+        "2600",
+        "5200"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "medication id",
+        "prescription number",
+        "rx number"
+      ],
+      "table": "medications",
+      "type": "text"
+    },
+    {
+      "description": "The patient who takes the medication, referring to the patient source key.",
+      "examples": [
+        "1",
+        "150",
+        "306"
+      ],
+      "name": "patient_id",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "patient",
+        "patient number",
+        "subject"
+      ],
+      "table": "medications",
+      "type": "reference"
+    },
+    {
+      "description": "The encounter in which the medication was prescribed, referring to the encounter source key.",
+      "examples": [
+        "12",
+        "3000",
+        "7242"
+      ],
+      "name": "encounter_id",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "visit",
+        "encounter",
+        "visit number"
+      ],
+      "table": "medications",
+      "type": "reference"
+    },
+    {
+      "description": "Drug code that identifies the medication.",
+      "examples": [
+        "313820",
+        "197361",
+        "834060"
+      ],
+      "name": "code",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "rx code",
+        "drug code",
+        "rxnorm",
+        "ndc"
+      ],
+      "table": "medications",
+      "type": "text"
+    },
+    {
+      "description": "Plain language name of the medication including strength and form.",
+      "examples": [
+        "Acetaminophen 160 MG Chewable Tablet",
+        "Amlodipine 5 MG Oral Tablet",
+        "Metformin hydrochloride 500 MG"
+      ],
+      "name": "description",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "drug",
+        "drug name",
+        "prescription",
+        "medicine"
+      ],
+      "table": "medications",
+      "type": "text"
+    },
+    {
+      "description": "Date on which the medication was started.",
+      "examples": [
+        "2024-01-19",
+        "2022-05-30",
+        "2019-11-02"
+      ],
+      "name": "start_date",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "prescribed on",
+        "start",
+        "from",
+        "begin date"
+      ],
+      "table": "medications",
+      "type": "date"
+    },
+    {
+      "description": "Date on which the medication was stopped, empty while it continues.",
+      "examples": [
+        "2024-02-06",
+        "2023-05-30",
+        "2020-11-02"
+      ],
+      "name": "stop_date",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "end date",
+        "stopped on",
+        "to",
+        "discontinued"
+      ],
+      "table": "medications",
+      "type": "date"
+    },
+    {
+      "description": "Total cost of the medication in cents.",
+      "examples": [
+        "5273",
+        "1200",
+        "18490"
+      ],
+      "name": "total_cost_cents",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "cost",
+        "price",
+        "charge",
+        "amount billed"
+      ],
+      "table": "medications",
+      "type": "integer"
+    },
+    {
+      "description": "Identifier of the observation record in the legacy system.",
+      "examples": [
+        "1",
+        "3000",
+        "6120"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "observation id",
+        "result number",
+        "measurement id"
+      ],
+      "table": "observations",
+      "type": "text"
+    },
+    {
+      "description": "The patient who was measured, referring to the patient source key.",
+      "examples": [
+        "1",
+        "150",
+        "306"
+      ],
+      "name": "patient_id",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "patient",
+        "patient number",
+        "subject"
+      ],
+      "table": "observations",
+      "type": "reference"
+    },
+    {
+      "description": "The encounter during which the observation was made, referring to the encounter source key.",
+      "examples": [
+        "12",
+        "3000",
+        "7242"
+      ],
+      "name": "encounter_id",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "visit",
+        "encounter",
+        "visit number"
+      ],
+      "table": "observations",
+      "type": "reference"
+    },
+    {
+      "description": "Clinical code that identifies what was measured.",
+      "examples": [
+        "8302-2",
+        "29463-7",
+        "8480-6"
+      ],
+      "name": "code",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "loinc",
+        "test code",
+        "measurement code",
+        "observation code"
+      ],
+      "table": "observations",
+      "type": "text"
+    },
+    {
+      "description": "Plain language name of what was measured.",
+      "examples": [
+        "Body Height",
+        "Body Weight",
+        "Systolic Blood Pressure"
+      ],
+      "name": "description",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "test name",
+        "measurement",
+        "observation",
+        "parameter"
+      ],
+      "table": "observations",
+      "type": "text"
+    },
+    {
+      "description": "Result of the measurement as recorded.",
+      "examples": [
+        "122.3",
+        "70.4",
+        "118"
+      ],
+      "name": "value",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "result",
+        "reading",
+        "measured value",
+        "outcome"
+      ],
+      "table": "observations",
+      "type": "text"
+    },
+    {
+      "description": "Unit of measure of the result.",
+      "examples": [
+        "cm",
+        "kg",
+        "mm[Hg]"
+      ],
+      "name": "units",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "unit",
+        "uom",
+        "measure unit"
+      ],
+      "table": "observations",
+      "type": "text"
+    },
+    {
+      "description": "Date and time at which the measurement was taken.",
+      "examples": [
+        "2024-06-08T05:05:00Z",
+        "2023-11-14T10:20:00Z",
+        "2025-01-30T16:45:00Z"
+      ],
+      "name": "observed_at",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "measured at",
+        "result time",
+        "taken on",
+        "observation time"
+      ],
+      "table": "observations",
+      "type": "timestamp"
+    }
+  ],
+  "schema": "clinic",
+  "version": "1"
+}

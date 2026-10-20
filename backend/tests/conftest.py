@@ -163,3 +163,65 @@ def tenants(admin_engine: Engine) -> tuple[Tenant, Tenant]:
         session.add(models.TargetSchema(id=uuid.uuid4(), org_id=None, name="builtin-shared"))
         session.commit()
     return a, b
+
+
+# ---------------------------------------------------------------------------------------------
+# API fixtures (Phase 2)
+# ---------------------------------------------------------------------------------------------
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from app.core.rate_limit import limiter  # noqa: E402
+from app.core.security import hash_password  # noqa: E402
+from app.db.models.enums import Role  # noqa: E402
+
+PASSWORD = "Correct-Horse-9-Battery"
+CSRF = {"X-Requested-With": "LegacyLift"}
+
+
+class ApiUsers:
+    def __init__(self, org_id: uuid.UUID, other_org_id: uuid.UUID) -> None:
+        self.org_id = org_id
+        self.other_org_id = other_org_id
+
+
+def make_user(engine: Engine, email: str, role: Role, org_id: uuid.UUID) -> uuid.UUID:
+    with Session(engine) as session:
+        user = models.User(email=email, password_hash=hash_password(PASSWORD), full_name=email)
+        session.add(user)
+        session.flush()
+        session.add(models.Membership(org_id=org_id, user_id=user.id, role=role))
+        session.commit()
+        return user.id
+
+
+@pytest.fixture(scope="session")
+def api_users(admin_engine: Engine) -> ApiUsers:
+    with Session(admin_engine) as session:
+        org = models.Organization(name="Acme", slug=f"acme-{uuid.uuid4().hex[:6]}")
+        other = models.Organization(name="Globex", slug=f"globex-{uuid.uuid4().hex[:6]}")
+        session.add_all([org, other])
+        session.commit()
+        ids = ApiUsers(org.id, other.id)
+    for role in Role:
+        make_user(admin_engine, f"{role.value}@acme.test", role, ids.org_id)
+    make_user(admin_engine, "admin@globex.test", Role.ADMIN, ids.other_org_id)
+    return ids
+
+
+@pytest.fixture
+def client(app_engine: Engine, api_users: ApiUsers, tmp_path, monkeypatch) -> Iterator[TestClient]:  # type: ignore[no-untyped-def]
+    import app.db.session as session_module
+    from app.main import create_app
+
+    monkeypatch.setattr(session_module, "get_engine", lambda: app_engine)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "upload_dir", str(tmp_path / "uploads"))
+    limiter.enabled = False
+    limiter.reset()
+    with TestClient(create_app(), base_url="https://testserver", headers=CSRF) as test_client:
+        yield test_client
+
+
+def login_as(client: TestClient, email: str, password: str = PASSWORD):  # type: ignore[no-untyped-def]
+    return client.post("/api/v1/auth/login", json={"email": email, "password": password})

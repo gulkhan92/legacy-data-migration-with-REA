@@ -17,5 +17,26 @@ services:
       timeout: 3s
       retries: 10
 
+  # Static analysis sandbox for uploaded software. Started on demand: docker compose --profile rea up
+  rea-runner:
+    profiles: ["rea"]
+    image: legacylift-rea-runner:6.7.0
+    build: ./rea-runner
+    user: "10001:10001"
+    read_only: true
+    network_mode: none          # no internet and no access to the database
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    cpus: 1.0
+    mem_limit: 1g
+    pids_limit: 128
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+    volumes:
+      - uploads_decrypted:/uploads:ro    # read only mount of files prepared for analysis
+    environment:
+      REA_TIMEOUT_SECONDS: "120"
+
 volumes:
   db_data:
+  uploads_decrypted:

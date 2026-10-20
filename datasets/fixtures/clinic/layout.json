@@ -1,0 +1,511 @@
+{
+  "format": "CDB1",
+  "version": 1,
+  "code_page": 1252,
+  "header": {
+    "size": 96,
+    "fields": [
+      {
+        "name": "magic",
+        "offset": 0,
+        "length": 4,
+        "type": "char",
+        "encoding": "ascii"
+      },
+      {
+        "name": "version",
+        "offset": 4,
+        "length": 2,
+        "type": "uint16",
+        "endianness": "little"
+      },
+      {
+        "name": "code_page",
+        "offset": 6,
+        "length": 2,
+        "type": "uint16",
+        "endianness": "little"
+      },
+      {
+        "name": "table_count",
+        "offset": 8,
+        "length": 2,
+        "type": "uint16",
+        "endianness": "little"
+      },
+      {
+        "name": "header_size",
+        "offset": 10,
+        "length": 2,
+        "type": "uint16",
+        "endianness": "little"
+      },
+      {
+        "name": "reserved",
+        "offset": 12,
+        "length": 4,
+        "type": "bytes"
+      }
+    ],
+    "directory": {
+      "offset": 16,
+      "entry_size": 16,
+      "entry_fields": [
+        {
+          "name": "table_id",
+          "offset": 0,
+          "length": 2,
+          "type": "uint16",
+          "endianness": "little"
+        },
+        {
+          "name": "record_size",
+          "offset": 2,
+          "length": 2,
+          "type": "uint16",
+          "endianness": "little"
+        },
+        {
+          "name": "record_count",
+          "offset": 4,
+          "length": 4,
+          "type": "uint32",
+          "endianness": "little"
+        },
+        {
+          "name": "data_offset",
+          "offset": 8,
+          "length": 4,
+          "type": "uint32",
+          "endianness": "little"
+        },
+        {
+          "name": "reserved",
+          "offset": 12,
+          "length": 4,
+          "type": "bytes"
+        }
+      ]
+    }
+  },
+  "file_size": 3563925,
+  "conventions": {
+    "epoch": "1900-01-01",
+    "null_date": 0,
+    "invalid_date": -1,
+    "dangling_reference": 9999999,
+    "no_reference": 0,
+    "null_text": "all spaces",
+    "text_padding": "space (0x20), longer values are truncated",
+    "money": "integer cents",
+    "timestamps": "whole minutes since the epoch, seconds are dropped"
+  },
+  "tables": [
+    {
+      "id": 1,
+      "name": "PATIENT",
+      "entity": "patients",
+      "record_size": 177,
+      "record_count": 306,
+      "data_offset": 96,
+      "fields": [
+        {
+          "name": "PatNo",
+          "offset": 0,
+          "length": 4,
+          "type": "int32",
+          "semantic": "key",
+          "endianness": "little"
+        },
+        {
+          "name": "LastNm",
+          "offset": 4,
+          "length": 30,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "FirstNm",
+          "offset": 34,
+          "length": 20,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "BirthDt",
+          "offset": 54,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_days",
+          "endianness": "little"
+        },
+        {
+          "name": "DeathDt",
+          "offset": 58,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_days",
+          "endianness": "little"
+        },
+        {
+          "name": "Flags",
+          "offset": 62,
+          "length": 2,
+          "type": "uint16",
+          "semantic": "bit_flags",
+          "endianness": "little",
+          "note": "bit 0 male, bit 1 deceased, bit 2 hispanic, bit 3 married, bits 4-5 race (0 white, 1 black, 2 asian, 3 other)"
+        },
+        {
+          "name": "Ssn",
+          "offset": 64,
+          "length": 11,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "Addr1",
+          "offset": 75,
+          "length": 40,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "CityNm",
+          "offset": 115,
+          "length": 24,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "StateNm",
+          "offset": 139,
+          "length": 16,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "ZipCd",
+          "offset": 155,
+          "length": 10,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "ExpCents",
+          "offset": 165,
+          "length": 8,
+          "type": "int64",
+          "semantic": "cents",
+          "endianness": "little",
+          "note": "lifetime healthcare expenses, no target field"
+        },
+        {
+          "name": "IncomeAmt",
+          "offset": 173,
+          "length": 4,
+          "type": "int32",
+          "semantic": "whole_number",
+          "endianness": "little",
+          "note": "annual income in whole dollars, no target field"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "ENCNTR",
+      "entity": "encounters",
+      "record_size": 117,
+      "record_count": 7855,
+      "data_offset": 54258,
+      "fields": [
+        {
+          "name": "EncNo",
+          "offset": 0,
+          "length": 4,
+          "type": "int32",
+          "semantic": "key",
+          "endianness": "little"
+        },
+        {
+          "name": "PatNo",
+          "offset": 4,
+          "length": 4,
+          "type": "int32",
+          "semantic": "ref",
+          "endianness": "little"
+        },
+        {
+          "name": "StartMin",
+          "offset": 8,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_minutes",
+          "endianness": "little"
+        },
+        {
+          "name": "EndMin",
+          "offset": 12,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_minutes",
+          "endianness": "little"
+        },
+        {
+          "name": "ClassCd",
+          "offset": 16,
+          "length": 1,
+          "type": "uint8",
+          "semantic": "code"
+        },
+        {
+          "name": "TypeCd",
+          "offset": 17,
+          "length": 16,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252",
+          "note": "procedure code of the visit type, no target field"
+        },
+        {
+          "name": "DescTxt",
+          "offset": 33,
+          "length": 80,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "CostCents",
+          "offset": 113,
+          "length": 4,
+          "type": "int32",
+          "semantic": "cents",
+          "endianness": "big",
+          "note": "the only big endian field"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "COND",
+      "entity": "conditions",
+      "record_size": 160,
+      "record_count": 5391,
+      "data_offset": 973293,
+      "fields": [
+        {
+          "name": "CondNo",
+          "offset": 0,
+          "length": 4,
+          "type": "int32",
+          "semantic": "key",
+          "endianness": "little"
+        },
+        {
+          "name": "PatNo",
+          "offset": 4,
+          "length": 4,
+          "type": "int32",
+          "semantic": "ref",
+          "endianness": "little"
+        },
+        {
+          "name": "EncNo",
+          "offset": 8,
+          "length": 4,
+          "type": "int32",
+          "semantic": "ref",
+          "endianness": "little"
+        },
+        {
+          "name": "DxCd",
+          "offset": 12,
+          "length": 20,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "DxDesc",
+          "offset": 32,
+          "length": 120,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "OnsetDt",
+          "offset": 152,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_days",
+          "endianness": "little"
+        },
+        {
+          "name": "ResolvDt",
+          "offset": 156,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_days",
+          "endianness": "little"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "MEDS",
+      "entity": "medications",
+      "record_size": 134,
+      "record_count": 6228,
+      "data_offset": 1835853,
+      "fields": [
+        {
+          "name": "MedNo",
+          "offset": 0,
+          "length": 4,
+          "type": "int32",
+          "semantic": "key",
+          "endianness": "little"
+        },
+        {
+          "name": "PatNo",
+          "offset": 4,
+          "length": 4,
+          "type": "int32",
+          "semantic": "ref",
+          "endianness": "little"
+        },
+        {
+          "name": "EncNo",
+          "offset": 8,
+          "length": 4,
+          "type": "int32",
+          "semantic": "ref",
+          "endianness": "little"
+        },
+        {
+          "name": "RxCd",
+          "offset": 12,
+          "length": 10,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "RxDesc",
+          "offset": 22,
+          "length": 100,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "StartDt",
+          "offset": 122,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_days",
+          "endianness": "little"
+        },
+        {
+          "name": "StopDt",
+          "offset": 126,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_days",
+          "endianness": "little"
+        },
+        {
+          "name": "CostCents",
+          "offset": 130,
+          "length": 4,
+          "type": "int32",
+          "semantic": "cents",
+          "endianness": "little"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "OBS",
+      "entity": "observations",
+      "record_size": 146,
+      "record_count": 6120,
+      "data_offset": 2670405,
+      "fields": [
+        {
+          "name": "ObsNo",
+          "offset": 0,
+          "length": 4,
+          "type": "int32",
+          "semantic": "key",
+          "endianness": "little"
+        },
+        {
+          "name": "PatNo",
+          "offset": 4,
+          "length": 4,
+          "type": "int32",
+          "semantic": "ref",
+          "endianness": "little"
+        },
+        {
+          "name": "EncNo",
+          "offset": 8,
+          "length": 4,
+          "type": "int32",
+          "semantic": "ref",
+          "endianness": "little"
+        },
+        {
+          "name": "ObsCd",
+          "offset": 12,
+          "length": 10,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "ObsDesc",
+          "offset": 22,
+          "length": 80,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "ObsVal",
+          "offset": 102,
+          "length": 24,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "ObsUnit",
+          "offset": 126,
+          "length": 16,
+          "type": "char",
+          "semantic": "text",
+          "encoding": "windows-1252"
+        },
+        {
+          "name": "ObsMin",
+          "offset": 142,
+          "length": 4,
+          "type": "int32",
+          "semantic": "epoch_minutes",
+          "endianness": "little"
+        }
+      ]
+    }
+  ]
+}

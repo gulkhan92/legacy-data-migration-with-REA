@@ -1,0 +1,30 @@
+{
+  "files": {
+    "expected/clinic/conditions.csv": "303d235d6742dd9888f0aca0753fbce6d87cb7fdf079845fa623dd2cc14b39c5",
+    "expected/clinic/encounters.csv": "d7fbd4d9d0de07e66c089e52437faf3e5d7e69f0f6d7602f1220927c9348bde8",
+    "expected/clinic/medications.csv": "e648456bb07234c4d6bfb615db6b9dfd6c2eb1cfd3c47c12f6d0dbb6dbd0bfc5",
+    "expected/clinic/observations.csv": "caa63f3eec300e7d9d0347d144de4b23e76ebdd74f5040807fbe131274822408",
+    "expected/clinic/patients.csv": "915045e2f3fa1c87fbe34e8a8309f1cd3cd8892768506be69d6d3422b5be997e",
+    "expected/commerce/customers.csv": "a332c8df8c6ea643b518ac3357392d8245795f32310d28c62aab6a8ad920fc0e",
+    "expected/commerce/order_items.csv": "fcb641680cd90327bacb1e1eefbba1bc63d9d5fe5e98706b108fdc2b722321ca",
+    "expected/commerce/orders.csv": "0fd00ce3cdacdbd1ea1601f2904015c05adb12e5259689883dd1968cc6981a48",
+    "expected/commerce/products.csv": "e919f7a3811002df1b505c4453c61728bf53127519054d8f4f9d69896d13ccb4",
+    "fixtures/clinic/ClinicDesk.dll": "5b10163d4c5f0ef377c0fd0e6be4780a71a582336992bbceb5218b763b4b1897",
+    "fixtures/clinic/ClinicDesk.runtimeconfig.json": "3d25821758613e4cd940d143ccb03c93704140077e69104996832510f38f6598",
+    "fixtures/clinic/clinic.cdb": "425408f6eeb235bc27394723367ad2088b2c4dfe644faefe59aae8cbfe888a6e",
+    "fixtures/clinic/ground_truth.json": "43eb77d2204687bc7a609e9e5a3f071fc344dec84fe247aff1626996efdf371c",
+    "fixtures/clinic/layout.json": "ad28e4fa698741f2f1005799c5103ab832afa4dd39072e061234eeeb2b81c3d5",
+    "fixtures/commerce/commerce_legacy.sqlite": "f1f076f6ab3d7176be9866099ed4801770fd69993f5989d65a1b26326986d11e",
+    "fixtures/commerce/ground_truth.json": "3a21229d2c902b5ec26f680d34030d16ad9c1776573e972beeaa746765e8ba10",
+    "targets/clinic_target.json": "4cbc872dfcb5802bcee9ceaf0a60c3ff50a14685c590c5b55363fb091db95d2b",
+    "targets/commerce_target.json": "0d6c81afb1787522927e10235243c2b4cb7da05e9a32ff0c9685062f2a399cb9"
+  },
+  "inputs": {
+    "Chinook_Sqlite.sqlite": "bdf635be69850bd3be09c9a2dbeef7ddfb80036bd3ef3381383cd03b61e4a61a",
+    "synthea-with-dependencies.jar": "ed43c20ad40ba5c3bc724503a5af032715fe3c491620b766148e7c2361e6ecc1"
+  },
+  "note": "SHA-256 of every generated file. The sqlite file is also listed by logical content, which does not depend on the SQLite library version. ClinicDesk.dll is reproducible with the pinned .NET SDK image (see README).",
+  "sqlite_logical": {
+    "fixtures/commerce/commerce_legacy.sqlite": "da23e0c6c40f94fdff9e81b469244da962469bb76db8ecf507da545500d82fa2"
+  }
+}

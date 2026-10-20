@@ -1,0 +1,413 @@
+source_key,customer_id,order_date,status,total_amount,billing_city,billing_country
+1,2,2009-01-01,completed,1.98,Stuttgart,Germany
+2,4,2009-01-02,completed,3.96,Oslo,Norway
+3,8,2009-01-03,completed,5.94,Brussels,Belgium
+4,14,2009-01-06,cancelled,8.91,Edmonton,Canada
+5,23,2009-01-11,completed,13.86,Boston,USA
+6,37,2009-01-19,completed,0.99,Frankfurt,Germany
+7,38,2009-02-01,completed,1.98,Berlin,Germany
+8,40,2009-02-01,cancelled,1.98,Paris,France
+9,42,2009-02-02,cancelled,3.96,Bordeaux,France
+10,46,2009-02-03,completed,5.94,Dublin,Ireland
+11,52,2009-02-06,completed,8.91,London,United Kingdom
+12,2,2009-02-11,completed,13.86,Stuttgart,Germany
+13,16,2009-02-19,completed,0.99,Mountain View,USA
+14,17,2009-03-04,completed,1.98,Redmond,USA
+15,19,2009-03-04,completed,1.98,Cupertino,USA
+16,21,2009-03-05,completed,3.96,Reno,USA
+17,25,2009-03-06,completed,5.94,Madison,USA
+18,31,2009-03-09,completed,8.91,Halifax,Canada
+19,40,2009-03-14,cancelled,13.86,Paris,France
+20,54,2009-03-22,completed,0.99,Edinburgh ,United Kingdom
+21,55,2009-04-04,completed,1.98,Sidney,Australia
+22,57,2009-04-04,completed,1.98,Santiago,Chile
+23,59,2009-04-05,completed,3.96,Bangalore,India
+24,4,2009-04-06,completed,5.94,Oslo,Norway
+25,10,2009-04-09,completed,8.91,São Paulo,Brazil
+26,19,2009-04-14,completed,13.86,Cupertino,USA
+27,33,2009-04-22,completed,0.99,Yellowknife,Canada
+28,34,2009-05-05,completed,1.98,Lisbon,Portugal
+29,36,2009-05-05,completed,1.98,Berlin,Germany
+30,38,2009-05-06,completed,3.96,Berlin,Germany
+31,42,2009-05-07,completed,5.94,Bordeaux,France
+32,48,2009-05-10,completed,8.91,Amsterdam,Netherlands
+33,57,2009-05-15,completed,13.86,Santiago,Chile
+34,12,2009-05-23,completed,0.99,Rio de Janeiro,Brazil
+35,13,2009-06-05,completed,1.98,Brasília,Brazil
+36,15,2009-06-05,completed,1.98,Vancouver,Canada
+37,17,2009-06-06,completed,3.96,Redmond,USA
+38,21,2009-06-07,cancelled,5.94,Reno,USA
+39,27,2009-06-10,completed,8.91,Tucson,USA
+40,36,2009-06-15,completed,13.86,Berlin,Germany
+41,50,2009-06-23,completed,0.99,Madrid,Spain
+42,51,2009-07-06,completed,1.98,Stockholm,Sweden
+43,53,2009-07-06,pending,1.98,London,United Kingdom
+44,55,2009-07-07,completed,3.96,Sidney,Australia
+45,59,2009-07-08,completed,5.94,Bangalore,India
+46,6,2009-07-11,completed,8.91,Prague,Czech Republic
+47,15,2009-07-16,completed,13.86,Vancouver,Canada
+48,29,2009-07-24,completed,0.99,Toronto,Canada
+49,30,2009-08-06,completed,1.98,Ottawa,Canada
+50,32,2009-08-06,completed,1.98,Winnipeg,Canada
+51,34,2009-08-07,completed,3.96,Lisbon,Portugal
+52,38,2009-08-08,completed,5.94,Berlin,Germany
+53,44,2009-08-11,completed,8.91,Helsinki,Finland
+54,53,2009-08-16,pending,13.86,London,United Kingdom
+55,8,2009-08-24,pending,0.99,Brussels,Belgium
+56,9,2009-09-06,completed,1.98,Copenhagen,Denmark
+57,11,2009-09-06,pending,1.98,São Paulo,Brazil
+58,13,2009-09-07,completed,3.96,Brasília,Brazil
+59,17,2009-09-08,completed,5.94,Redmond,USA
+60,23,2009-09-11,completed,8.91,Boston,USA
+61,32,2009-09-16,completed,13.86,Winnipeg,Canada
+62,46,2009-09-24,completed,0.99,Dublin,Ireland
+63,47,2009-10-07,completed,1.98,Rome,Italy
+64,49,2009-10-07,completed,1.98,Warsaw,Poland
+65,51,2009-10-08,completed,3.96,Stockholm,Sweden
+66,55,2009-10-09,completed,5.94,Sidney,Australia
+67,2,2009-10-12,completed,8.91,Stuttgart,Germany
+68,11,2009-10-17,completed,13.86,São Paulo,Brazil
+69,25,2009-10-25,completed,0.99,Madison,USA
+70,26,2009-11-07,completed,1.98,Fort Worth,USA
+71,28,2009-11-07,completed,1.98,Salt Lake City,USA
+72,30,2009-11-08,completed,3.96,Ottawa,Canada
+73,34,2009-11-09,completed,5.94,Lisbon,Portugal
+74,40,2009-11-12,completed,8.91,Paris,France
+75,49,2009-11-17,completed,13.86,Warsaw,Poland
+76,4,2009-11-25,completed,0.99,Oslo,Norway
+77,5,2009-12-08,pending,1.98,Prague,Czech Republic
+78,7,2009-12-08,completed,1.98,Vienne,Austria
+79,9,2009-12-09,completed,3.96,Copenhagen,Denmark
+80,13,2009-12-10,completed,5.94,Brasília,Brazil
+81,19,2009-12-13,completed,8.91,Cupertino,USA
+82,28,2009-12-18,pending,13.86,Salt Lake City,USA
+83,42,2009-12-26,completed,0.99,Bordeaux,France
+84,43,2010-01-08,completed,1.98,Dijon,France
+85,45,2010-01-08,completed,1.98,Budapest,Hungary
+86,47,2010-01-09,completed,3.96,Rome,Italy
+87,51,2010-01-10,completed,6.94,Stockholm,Sweden
+88,57,2010-01-13,completed,17.91,Santiago,Chile
+89,7,2010-01-18,completed,18.86,Vienne,Austria
+90,21,2010-01-26,completed,0.99,Reno,USA
+91,22,2010-02-08,cancelled,1.98,Orlando,USA
+92,24,2010-02-08,completed,1.98,Chicago,USA
+93,26,2010-02-09,completed,3.96,Fort Worth,USA
+94,30,2010-02-10,completed,5.94,Ottawa,Canada
+95,36,2010-02-13,completed,8.91,Berlin,Germany
+96,45,2010-02-18,cancelled,21.86,Budapest,Hungary
+97,59,2010-02-26,completed,1.99,Bangalore,India
+98,1,2010-03-11,completed,3.98,São José dos Campos,Brazil
+99,3,2010-03-11,pending,3.98,Montréal,Canada
+100,5,2010-03-12,completed,3.96,Prague,Czech Republic
+101,9,2010-03-13,completed,5.94,Copenhagen,Denmark
+102,15,2010-03-16,completed,9.91,Vancouver,Canada
+103,24,2010-03-21,completed,15.86,Chicago,USA
+104,38,2010-03-29,cancelled,0.99,Berlin,Germany
+105,39,2010-04-11,completed,1.98,Paris,France
+106,41,2010-04-11,cancelled,1.98,Lyon,France
+107,43,2010-04-12,completed,3.96,Dijon,France
+108,47,2010-04-13,completed,5.94,Rome,Italy
+109,53,2010-04-16,completed,8.91,London,United Kingdom
+110,3,2010-04-21,completed,13.86,Montréal,Canada
+111,17,2010-04-29,completed,0.99,Redmond,USA
+112,18,2010-05-12,completed,1.98,New York,USA
+113,20,2010-05-12,completed,1.98,Mountain View,USA
+114,22,2010-05-13,completed,3.96,Orlando,USA
+115,26,2010-05-14,completed,5.94,Fort Worth,USA
+116,32,2010-05-17,completed,8.91,Winnipeg,Canada
+117,41,2010-05-22,completed,13.86,Lyon,France
+118,55,2010-05-30,completed,0.99,Sidney,Australia
+119,56,2010-06-12,pending,1.98,Buenos Aires,Argentina
+120,58,2010-06-12,completed,1.98,Delhi,India
+121,1,2010-06-13,completed,3.96,São José dos Campos,Brazil
+122,5,2010-06-14,completed,5.94,Prague,Czech Republic
+123,11,2010-06-17,cancelled,8.91,São Paulo,Brazil
+124,20,2010-06-22,completed,13.86,Mountain View,USA
+125,34,2010-06-30,completed,0.99,Lisbon,Portugal
+126,35,2010-07-13,completed,1.98,Porto,Portugal
+127,37,2010-07-13,completed,1.98,Frankfurt,Germany
+128,39,2010-07-14,completed,3.96,Paris,France
+129,43,2010-07-15,completed,5.94,Dijon,France
+130,49,2010-07-18,completed,8.91,Warsaw,Poland
+131,58,2010-07-23,completed,13.86,Delhi,India
+132,13,2010-07-31,completed,0.99,Brasília,Brazil
+133,14,2010-08-13,completed,1.98,Edmonton,Canada
+134,16,2010-08-13,completed,1.98,Mountain View,USA
+135,18,2010-08-14,completed,3.96,New York,USA
+136,22,2010-08-15,completed,5.94,Orlando,USA
+137,28,2010-08-18,pending,8.91,Salt Lake City,USA
+138,37,2010-08-23,pending,13.86,Frankfurt,Germany
+139,51,2010-08-31,completed,0.99,Stockholm,Sweden
+140,52,2010-09-13,cancelled,1.98,London,United Kingdom
+141,54,2010-09-13,completed,1.98,Edinburgh ,United Kingdom
+142,56,2010-09-14,pending,3.96,Buenos Aires,Argentina
+143,1,2010-09-15,completed,5.94,São José dos Campos,Brazil
+144,7,2010-09-18,completed,8.91,Vienne,Austria
+145,16,2010-09-23,pending,13.86,Mountain View,USA
+146,30,2010-10-01,completed,0.99,Ottawa,Canada
+147,31,2010-10-14,completed,1.98,Halifax,Canada
+148,33,2010-10-14,pending,1.98,Yellowknife,Canada
+149,35,2010-10-15,completed,3.96,Porto,Portugal
+150,39,2010-10-16,completed,5.94,Paris,France
+151,45,2010-10-19,pending,8.91,Budapest,Hungary
+152,54,2010-10-24,completed,13.86,Edinburgh ,United Kingdom
+153,9,2010-11-01,completed,0.99,Copenhagen,Denmark
+154,10,2010-11-14,completed,1.98,São Paulo,Brazil
+155,12,2010-11-14,completed,1.98,Rio de Janeiro,Brazil
+156,14,2010-11-15,completed,3.96,Edmonton,Canada
+157,18,2010-11-16,cancelled,5.94,New York,USA
+158,24,2010-11-19,completed,8.91,Chicago,USA
+159,33,2010-11-24,completed,13.86,Yellowknife,Canada
+160,47,2010-12-02,completed,0.99,Rome,Italy
+161,48,2010-12-15,completed,1.98,Amsterdam,Netherlands
+162,50,2010-12-15,completed,1.98,Madrid,Spain
+163,52,2010-12-16,completed,3.96,London,United Kingdom
+164,56,2010-12-17,completed,5.94,Buenos Aires,Argentina
+165,3,2010-12-20,pending,8.91,Montréal,Canada
+166,12,2010-12-25,completed,13.86,Rio de Janeiro,Brazil
+167,26,2011-01-02,completed,0.99,Fort Worth,USA
+168,27,2011-01-15,completed,1.98,Tucson,USA
+169,29,2011-01-15,completed,1.98,Toronto,Canada
+170,31,2011-01-16,completed,3.96,Halifax,Canada
+171,35,2011-01-17,completed,5.94,Porto,Portugal
+172,41,2011-01-20,completed,8.91,Lyon,France
+173,50,2011-01-25,completed,13.86,Madrid,Spain
+174,5,2011-02-02,completed,0.99,Prague,Czech Republic
+175,6,2011-02-15,completed,1.98,Prague,Czech Republic
+176,8,2011-02-15,completed,1.98,Brussels,Belgium
+177,10,2011-02-16,completed,3.96,São Paulo,Brazil
+178,14,2011-02-17,completed,5.94,Edmonton,Canada
+179,20,2011-02-20,completed,8.91,Mountain View,USA
+180,29,2011-02-25,completed,13.86,Toronto,Canada
+181,43,2011-03-05,completed,0.99,Dijon,France
+182,44,2011-03-18,completed,1.98,Helsinki,Finland
+183,46,2011-03-18,pending,1.98,Dublin,Ireland
+184,48,2011-03-19,completed,3.96,Amsterdam,Netherlands
+185,52,2011-03-20,completed,5.94,London,United Kingdom
+186,58,2011-03-23,completed,8.91,Delhi,India
+187,8,2011-03-28,completed,13.86,Brussels,Belgium
+188,22,2011-04-05,completed,0.99,Orlando,USA
+189,23,2011-04-18,completed,1.98,Boston,USA
+190,25,2011-04-18,completed,1.98,Madison,USA
+191,27,2011-04-19,completed,3.96,Tucson,USA
+192,31,2011-04-20,completed,5.94,Halifax,Canada
+193,37,2011-04-23,completed,14.91,Frankfurt,Germany
+194,46,2011-04-28,cancelled,21.86,Dublin,Ireland
+195,1,2011-05-06,completed,0.99,São José dos Campos,Brazil
+196,2,2011-05-19,completed,1.98,Stuttgart,Germany
+197,4,2011-05-19,cancelled,1.98,Oslo,Norway
+198,6,2011-05-20,pending,3.96,Prague,Czech Republic
+199,10,2011-05-21,completed,5.94,São Paulo,Brazil
+200,16,2011-05-24,completed,8.91,Mountain View,USA
+201,25,2011-05-29,completed,18.86,Madison,USA
+202,39,2011-06-06,completed,1.99,Paris,France
+203,40,2011-06-19,completed,2.98,Paris,France
+204,42,2011-06-19,completed,3.98,Bordeaux,France
+205,44,2011-06-20,pending,7.96,Helsinki,Finland
+206,48,2011-06-21,completed,8.94,Amsterdam,Netherlands
+207,54,2011-06-24,completed,8.91,Edinburgh ,United Kingdom
+208,4,2011-06-29,completed,15.86,Oslo,Norway
+209,18,2011-07-07,pending,0.99,New York,USA
+210,19,2011-07-20,completed,1.98,Cupertino,USA
+211,21,2011-07-20,completed,1.98,Reno,USA
+212,23,2011-07-21,completed,3.96,Boston,USA
+213,27,2011-07-22,completed,5.94,Tucson,USA
+214,33,2011-07-25,pending,8.91,Yellowknife,Canada
+215,42,2011-07-30,pending,13.86,Bordeaux,France
+216,56,2011-08-07,completed,0.99,Buenos Aires,Argentina
+217,57,2011-08-20,completed,1.98,Santiago,Chile
+218,59,2011-08-20,completed,1.98,Bangalore,India
+219,2,2011-08-21,completed,3.96,Stuttgart,Germany
+220,6,2011-08-22,completed,5.94,Prague,Czech Republic
+221,12,2011-08-25,completed,8.91,Rio de Janeiro,Brazil
+222,21,2011-08-30,completed,13.86,Reno,USA
+223,35,2011-09-07,completed,0.99,Porto,Portugal
+224,36,2011-09-20,completed,1.98,Berlin,Germany
+225,38,2011-09-20,completed,1.98,Berlin,Germany
+226,40,2011-09-21,completed,3.96,Paris,France
+227,44,2011-09-22,completed,5.94,Helsinki,Finland
+228,50,2011-09-25,completed,8.91,Madrid,Spain
+229,59,2011-09-30,pending,13.86,Bangalore,India
+230,14,2011-10-08,pending,0.99,Edmonton,Canada
+231,15,2011-10-21,completed,1.98,Vancouver,Canada
+232,17,2011-10-21,completed,1.98,Redmond,USA
+233,19,2011-10-22,completed,3.96,Cupertino,USA
+234,23,2011-10-23,completed,5.94,Boston,USA
+235,29,2011-10-26,cancelled,8.91,Toronto,Canada
+236,38,2011-10-31,completed,13.86,Berlin,Germany
+237,52,2011-11-08,completed,0.99,London,United Kingdom
+238,53,2011-11-21,completed,1.98,London,United Kingdom
+239,55,2011-11-21,completed,1.98,Sidney,Australia
+240,57,2011-11-22,completed,3.96,Santiago,Chile
+241,2,2011-11-23,completed,5.94,Stuttgart,Germany
+242,8,2011-11-26,completed,8.91,Brussels,Belgium
+243,17,2011-12-01,completed,13.86,Redmond,USA
+244,31,2011-12-09,completed,0.99,Halifax,Canada
+245,32,2011-12-22,completed,1.98,Winnipeg,Canada
+246,34,2011-12-22,completed,1.98,Lisbon,Portugal
+247,36,2011-12-23,completed,3.96,Berlin,Germany
+248,40,2011-12-24,cancelled,5.94,Paris,France
+249,46,2011-12-27,completed,8.91,Dublin,Ireland
+250,55,2012-01-01,completed,13.86,Sidney,Australia
+251,10,2012-01-09,completed,0.99,São Paulo,Brazil
+252,11,2012-01-22,pending,1.98,São Paulo,Brazil
+253,13,2012-01-22,cancelled,1.98,Brasília,Brazil
+254,15,2012-01-23,pending,3.96,Vancouver,Canada
+255,19,2012-01-24,completed,5.94,Cupertino,USA
+256,25,2012-01-27,completed,8.91,Madison,USA
+257,34,2012-02-01,completed,13.86,Lisbon,Portugal
+258,48,2012-02-09,completed,0.99,Amsterdam,Netherlands
+259,49,2012-02-22,completed,1.98,Warsaw,Poland
+260,51,2012-02-22,cancelled,1.98,Stockholm,Sweden
+261,53,2012-02-23,pending,3.96,London,United Kingdom
+262,57,2012-02-24,completed,5.94,Santiago,Chile
+263,4,2012-02-27,completed,8.91,Oslo,Norway
+264,13,2012-03-03,completed,13.86,Brasília,Brazil
+265,27,2012-03-11,completed,0.99,Tucson,USA
+266,28,2012-03-24,cancelled,1.98,Salt Lake City,USA
+267,30,2012-03-24,completed,1.98,Ottawa,Canada
+268,32,2012-03-25,completed,3.96,Winnipeg,Canada
+269,36,2012-03-26,completed,5.94,Berlin,Germany
+270,42,2012-03-29,pending,8.91,Bordeaux,France
+271,51,2012-04-03,completed,13.86,Stockholm,Sweden
+272,6,2012-04-11,cancelled,0.99,Prague,Czech Republic
+273,7,2012-04-24,completed,1.98,Vienne,Austria
+274,9,2012-04-24,completed,1.98,Copenhagen,Denmark
+275,11,2012-04-25,completed,3.96,São Paulo,Brazil
+276,15,2012-04-26,completed,5.94,Vancouver,Canada
+277,21,2012-04-29,completed,8.91,Reno,USA
+278,30,2012-05-04,completed,13.86,Ottawa,Canada
+279,44,2012-05-12,completed,0.99,Helsinki,Finland
+280,45,2012-05-25,completed,1.98,Budapest,Hungary
+281,47,2012-05-25,completed,1.98,Rome,Italy
+282,49,2012-05-26,completed,3.96,Warsaw,Poland
+283,53,2012-05-27,completed,5.94,London,United Kingdom
+284,59,2012-05-30,pending,8.91,Bangalore,India
+285,9,2012-06-04,completed,13.86,Copenhagen,Denmark
+286,23,2012-06-12,completed,0.99,Boston,USA
+287,24,2012-06-25,completed,1.98,Chicago,USA
+288,26,2012-06-25,completed,1.98,Fort Worth,USA
+289,28,2012-06-26,completed,3.96,Salt Lake City,USA
+290,32,2012-06-27,completed,5.94,Winnipeg,Canada
+291,38,2012-06-30,completed,8.91,Berlin,Germany
+292,47,2012-07-05,completed,13.86,Rome,Italy
+293,2,2012-07-13,completed,0.99,Stuttgart,Germany
+294,3,2012-07-26,pending,1.98,Montréal,Canada
+295,5,2012-07-26,completed,1.98,Prague,Czech Republic
+296,7,2012-07-27,completed,3.96,Vienne,Austria
+297,11,2012-07-28,completed,5.94,São Paulo,Brazil
+298,17,2012-07-31,completed,10.91,Redmond,USA
+299,26,2012-08-05,completed,23.86,Fort Worth,USA
+300,40,2012-08-13,completed,0.99,Paris,France
+301,41,2012-08-26,completed,1.98,Lyon,France
+302,43,2012-08-26,completed,1.98,Dijon,France
+303,45,2012-08-27,completed,3.96,Budapest,Hungary
+304,49,2012-08-28,completed,5.94,Warsaw,Poland
+305,55,2012-08-31,completed,8.91,Sidney,Australia
+306,5,2012-09-05,completed,16.86,Prague,Czech Republic
+307,19,2012-09-13,completed,1.99,Cupertino,USA
+308,20,2012-09-26,completed,3.98,Mountain View,USA
+309,22,2012-09-26,completed,3.98,Orlando,USA
+310,24,2012-09-27,completed,7.96,Chicago,USA
+311,28,2012-09-28,completed,11.94,Salt Lake City,USA
+312,34,2012-10-01,pending,10.91,Lisbon,Portugal
+313,43,2012-10-06,completed,16.86,Dijon,France
+314,57,2012-10-14,pending,0.99,Santiago,Chile
+315,58,2012-10-27,completed,1.98,Delhi,India
+316,1,2012-10-27,completed,1.98,São José dos Campos,Brazil
+317,3,2012-10-28,completed,3.96,Montréal,Canada
+318,7,2012-10-29,pending,5.94,Vienne,Austria
+319,13,2012-11-01,completed,8.91,Brasília,Brazil
+320,22,2012-11-06,completed,13.86,Orlando,USA
+321,36,2012-11-14,completed,0.99,Berlin,Germany
+322,37,2012-11-27,completed,1.98,Frankfurt,Germany
+323,39,2012-11-27,completed,1.98,Paris,France
+324,41,2012-11-28,completed,3.96,Lyon,France
+325,45,2012-11-29,completed,5.94,Budapest,Hungary
+326,51,2012-12-02,pending,8.91,Stockholm,Sweden
+327,1,2012-12-07,completed,13.86,São José dos Campos,Brazil
+328,15,2012-12-15,completed,0.99,Vancouver,Canada
+329,16,2012-12-28,cancelled,1.98,Mountain View,USA
+330,18,2012-12-28,completed,1.98,New York,USA
+331,20,2012-12-29,completed,3.96,Mountain View,USA
+332,24,2012-12-30,completed,5.94,Chicago,USA
+333,30,2013-01-02,completed,8.91,Ottawa,Canada
+334,39,2013-01-07,completed,13.86,Paris,France
+335,53,2013-01-15,completed,0.99,London,United Kingdom
+336,54,2013-01-28,completed,1.98,Edinburgh ,United Kingdom
+337,56,2013-01-28,completed,1.98,Buenos Aires,Argentina
+338,58,2013-01-29,completed,3.96,Delhi,India
+339,3,2013-01-30,completed,5.94,Montréal,Canada
+340,9,2013-02-02,pending,8.91,Copenhagen,Denmark
+341,18,2013-02-07,completed,13.86,New York,USA
+342,32,2013-02-15,completed,0.99,Winnipeg,Canada
+343,33,2013-02-28,completed,1.98,Yellowknife,Canada
+344,35,2013-02-28,completed,1.98,Porto,Portugal
+345,37,2013-03-01,completed,3.96,Frankfurt,Germany
+346,41,2013-03-02,completed,5.94,Lyon,France
+347,47,2013-03-05,completed,8.91,Rome,Italy
+348,56,2013-03-10,completed,13.86,Buenos Aires,Argentina
+349,11,2013-03-18,completed,0.99,São Paulo,Brazil
+350,12,2013-03-31,completed,1.98,Rio de Janeiro,Brazil
+351,14,2013-03-31,completed,1.98,Edmonton,Canada
+352,16,2013-04-01,pending,3.96,Mountain View,USA
+353,20,2013-04-02,completed,5.94,Mountain View,USA
+354,26,2013-04-05,completed,8.91,Fort Worth,USA
+355,35,2013-04-10,completed,13.86,Porto,Portugal
+356,49,2013-04-18,completed,0.99,Warsaw,Poland
+357,50,2013-05-01,completed,1.98,Madrid,Spain
+358,52,2013-05-01,completed,1.98,London,United Kingdom
+359,54,2013-05-02,completed,3.96,Edinburgh ,United Kingdom
+360,58,2013-05-03,completed,5.94,Delhi,India
+361,5,2013-05-06,completed,8.91,Prague,Czech Republic
+362,14,2013-05-11,completed,13.86,Edmonton,Canada
+363,28,2013-05-19,completed,0.99,Salt Lake City,USA
+364,29,2013-06-01,completed,1.98,Toronto,Canada
+365,31,2013-06-01,completed,1.98,Halifax,Canada
+366,33,2013-06-02,completed,3.96,Yellowknife,Canada
+367,37,2013-06-03,completed,5.94,Frankfurt,Germany
+368,43,2013-06-06,completed,8.91,Dijon,France
+369,52,2013-06-11,completed,13.86,London,United Kingdom
+370,7,2013-06-19,cancelled,0.99,Vienne,Austria
+371,8,2013-07-02,completed,1.98,Brussels,Belgium
+372,10,2013-07-02,pending,1.98,São Paulo,Brazil
+373,12,2013-07-03,completed,3.96,Rio de Janeiro,Brazil
+374,16,2013-07-04,pending,5.94,Mountain View,USA
+375,22,2013-07-07,cancelled,8.91,Orlando,USA
+376,31,2013-07-12,completed,13.86,Halifax,Canada
+377,45,2013-07-20,completed,0.99,Budapest,Hungary
+378,46,2013-08-02,completed,1.98,Dublin,Ireland
+379,48,2013-08-02,completed,1.98,Amsterdam,Netherlands
+380,50,2013-08-03,completed,3.96,Madrid,Spain
+381,54,2013-08-04,completed,5.94,Edinburgh ,United Kingdom
+382,1,2013-08-07,completed,8.91,São José dos Campos,Brazil
+383,10,2013-08-12,pending,13.86,São Paulo,Brazil
+384,24,2013-08-20,completed,0.99,Chicago,USA
+385,25,2013-09-02,pending,1.98,Madison,USA
+386,27,2013-09-02,completed,1.98,Tucson,USA
+387,29,2013-09-03,cancelled,3.96,Toronto,Canada
+388,33,2013-09-04,completed,5.94,Yellowknife,Canada
+389,39,2013-09-07,completed,8.91,Paris,France
+390,48,2013-09-12,cancelled,13.86,Amsterdam,Netherlands
+391,3,2013-09-20,completed,0.99,Montréal,Canada
+392,4,2013-10-03,completed,1.98,Oslo,Norway
+393,6,2013-10-03,completed,1.98,Prague,Czech Republic
+394,8,2013-10-04,completed,3.96,Brussels,Belgium
+395,12,2013-10-05,pending,5.94,Rio de Janeiro,Brazil
+396,18,2013-10-08,completed,8.91,New York,USA
+397,27,2013-10-13,completed,13.86,Tucson,USA
+398,41,2013-10-21,completed,0.99,Lyon,France
+399,42,2013-11-03,completed,1.98,Bordeaux,France
+400,44,2013-11-03,completed,1.98,Helsinki,Finland
+401,46,2013-11-04,completed,3.96,Dublin,Ireland
+402,50,2013-11-05,cancelled,5.94,Madrid,Spain
+403,56,2013-11-08,completed,8.91,Buenos Aires,Argentina
+404,6,2013-11-13,pending,25.86,Prague,Czech Republic
+405,20,2013-11-21,completed,0.99,Mountain View,USA
+406,21,2013-12-04,completed,1.98,Reno,USA
+407,23,2013-12-04,completed,1.98,Boston,USA
+408,25,2013-12-05,completed,3.96,Madison,USA
+409,29,2013-12-06,completed,5.94,Toronto,Canada
+410,35,2013-12-09,completed,8.91,Porto,Portugal
+411,44,2013-12-14,completed,13.86,Helsinki,Finland
+412,58,2013-12-22,completed,1.99,Delhi,India

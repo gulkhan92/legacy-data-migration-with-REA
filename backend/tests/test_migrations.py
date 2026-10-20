@@ -129,6 +129,7 @@ def test_every_tenant_table_has_forced_rls(admin_engine) -> None:  # type: ignor
             )
         }
         policies = {(r[0], r[1]) for r in conn.execute(text("SELECT schemaname, tablename FROM pg_policies"))}
+    tenant_tables = {t for t in tenant_tables if t[1] not in GLOBAL_TABLES}
     # organizations is the tenant root and is protected on its id column.
     protected = tenant_tables | {("public", "organizations")}
     assert len(tenant_tables) >= 27

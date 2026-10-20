@@ -1,0 +1,509 @@
+{
+  "description": "Canonical retail schema: customers, products, orders and order items.",
+  "fields": [
+    {
+      "description": "Identifier of the customer record in the legacy system.",
+      "examples": [
+        "1",
+        "25",
+        "59"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "customer id",
+        "customer number",
+        "client number",
+        "account number"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Given name of the customer.",
+      "examples": [
+        "Helena",
+        "Mark",
+        "Aaron"
+      ],
+      "name": "first_name",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "forename",
+        "given name",
+        "first name"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Family name of the customer.",
+      "examples": [
+        "Holy",
+        "Philips",
+        "Mitchell"
+      ],
+      "name": "last_name",
+      "pii": true,
+      "required": true,
+      "synonyms": [
+        "surname",
+        "family name",
+        "last name"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Name of the company the customer works for.",
+      "examples": [
+        "Apple Inc.",
+        "Microsoft Corporation",
+        "Riotur"
+      ],
+      "name": "company",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "organization",
+        "employer",
+        "business name"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Email address used to contact the customer.",
+      "examples": [
+        "helena@example.test",
+        "mphilips@example.test",
+        "aaron@example.test"
+      ],
+      "name": "email",
+      "pii": true,
+      "required": true,
+      "synonyms": [
+        "e-mail",
+        "email address",
+        "mail"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Telephone number of the customer.",
+      "examples": [
+        "+1 (650) 253-0000",
+        "+55 (11) 3033-5446",
+        "+49 030 26550280"
+      ],
+      "name": "phone",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "telephone",
+        "phone number",
+        "contact number",
+        "mobile"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Street address of the customer.",
+      "examples": [
+        "696 Osborne Street",
+        "1 Microsoft Way",
+        "Rotenturmstraße 4"
+      ],
+      "name": "address_line1",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "street",
+        "address",
+        "street address",
+        "address line 1"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "City where the customer lives.",
+      "examples": [
+        "Rio de Janeiro",
+        "Boston",
+        "Berlin"
+      ],
+      "name": "city",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "town",
+        "city name",
+        "municipality"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "State or province where the customer lives.",
+      "examples": [
+        "CA",
+        "MA",
+        "SP"
+      ],
+      "name": "state",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "province",
+        "region",
+        "state code"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Postal or ZIP code of the customer address.",
+      "examples": [
+        "94043",
+        "70174",
+        "12227-000"
+      ],
+      "name": "postal_code",
+      "pii": true,
+      "required": false,
+      "synonyms": [
+        "zip",
+        "zip code",
+        "postcode",
+        "postal"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Country where the customer lives.",
+      "examples": [
+        "USA",
+        "Germany",
+        "Brazil"
+      ],
+      "name": "country",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "nation",
+        "country name"
+      ],
+      "table": "customers",
+      "type": "text"
+    },
+    {
+      "description": "Identifier of the product record in the legacy system.",
+      "examples": [
+        "1",
+        "1500",
+        "3503"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "product id",
+        "product number",
+        "item number",
+        "sku"
+      ],
+      "table": "products",
+      "type": "text"
+    },
+    {
+      "description": "Name of the product as shown to customers.",
+      "examples": [
+        "Balls to the Wall",
+        "Fast As a Shark",
+        "Princess of the Dawn"
+      ],
+      "name": "name",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "title",
+        "product name",
+        "item name",
+        "description"
+      ],
+      "table": "products",
+      "type": "text"
+    },
+    {
+      "description": "Category or genre that the product belongs to.",
+      "examples": [
+        "Rock",
+        "Jazz",
+        "Metal"
+      ],
+      "name": "category",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "genre",
+        "type",
+        "product group",
+        "classification"
+      ],
+      "table": "products",
+      "type": "text"
+    },
+    {
+      "description": "Standard selling price of one unit of the product.",
+      "examples": [
+        "0.99",
+        "1.99",
+        "0.99"
+      ],
+      "name": "unit_price",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "price",
+        "list price",
+        "unit cost",
+        "amount"
+      ],
+      "table": "products",
+      "type": "decimal"
+    },
+    {
+      "description": "Identifier of the order record in the legacy system.",
+      "examples": [
+        "1",
+        "205",
+        "412"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "order id",
+        "order number",
+        "invoice number",
+        "invoice id"
+      ],
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "description": "The customer who placed the order, referring to the customer source key.",
+      "examples": [
+        "2",
+        "14",
+        "59"
+      ],
+      "name": "customer_id",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "customer",
+        "customer number",
+        "client",
+        "buyer"
+      ],
+      "table": "orders",
+      "type": "reference"
+    },
+    {
+      "description": "Date on which the order was placed.",
+      "examples": [
+        "2009-01-01",
+        "2011-06-15",
+        "2013-12-22"
+      ],
+      "name": "order_date",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "invoice date",
+        "purchase date",
+        "date ordered",
+        "order dt"
+      ],
+      "table": "orders",
+      "type": "date"
+    },
+    {
+      "description": "Processing state of the order such as completed, pending or cancelled.",
+      "examples": [
+        "completed",
+        "pending",
+        "cancelled"
+      ],
+      "name": "status",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "order status",
+        "state",
+        "status code"
+      ],
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "description": "Total amount charged for the whole order.",
+      "examples": [
+        "1.98",
+        "13.86",
+        "8.91"
+      ],
+      "name": "total_amount",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "invoice total",
+        "order total",
+        "grand total",
+        "total"
+      ],
+      "table": "orders",
+      "type": "decimal"
+    },
+    {
+      "description": "City of the billing address on the order.",
+      "examples": [
+        "Stuttgart",
+        "Oslo",
+        "Paris"
+      ],
+      "name": "billing_city",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "bill city",
+        "invoice city",
+        "billing town"
+      ],
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "description": "Country of the billing address on the order.",
+      "examples": [
+        "Germany",
+        "Norway",
+        "France"
+      ],
+      "name": "billing_country",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "bill country",
+        "invoice country",
+        "billing nation"
+      ],
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "description": "Identifier of the order line record in the legacy system.",
+      "examples": [
+        "1",
+        "1200",
+        "2240"
+      ],
+      "name": "source_key",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "line id",
+        "line number",
+        "invoice line id",
+        "detail number"
+      ],
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "description": "The order that the line belongs to, referring to the order source key.",
+      "examples": [
+        "1",
+        "205",
+        "412"
+      ],
+      "name": "order_id",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "invoice",
+        "invoice number",
+        "order number",
+        "order"
+      ],
+      "table": "order_items",
+      "type": "reference"
+    },
+    {
+      "description": "The product sold on the line, referring to the product source key.",
+      "examples": [
+        "2",
+        "1500",
+        "3503"
+      ],
+      "name": "product_id",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "item",
+        "track",
+        "product number",
+        "article"
+      ],
+      "table": "order_items",
+      "type": "reference"
+    },
+    {
+      "description": "Number of units of the product on the line.",
+      "examples": [
+        "1",
+        "1",
+        "2"
+      ],
+      "name": "quantity",
+      "pii": false,
+      "required": true,
+      "synonyms": [
+        "qty",
+        "units",
+        "count",
+        "number of items"
+      ],
+      "table": "order_items",
+      "type": "integer"
+    },
+    {
+      "description": "Price charged for one unit of the product on the line.",
+      "examples": [
+        "0.99",
+        "1.99",
+        "0.99"
+      ],
+      "name": "unit_price",
+      "pii": false,
+      "required": false,
+      "synonyms": [
+        "price",
+        "line price",
+        "unit cost",
+        "rate"
+      ],
+      "table": "order_items",
+      "type": "decimal"
+    }
+  ],
+  "schema": "commerce",
+  "version": "1"
+}
