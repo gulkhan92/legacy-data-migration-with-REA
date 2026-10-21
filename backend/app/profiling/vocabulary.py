@@ -30,7 +30,8 @@ ABBREVIATIONS: dict[str, str] = {
     "start": "start", "stop": "stop", "end": "end", "ethnicity": "ethnicity", "race": "race", "gender": "gender",
     "sex": "gender", "marital": "marital", "unit": "unit", "units": "unit", "ref": "reference", "seq": "sequence",
     "flag": "flag", "flags": "flag", "class": "class", "type": "type", "cost": "cost", "fee": "fee",
-    "balance": "balance", "bal": "balance", "rate": "rate", "sku": "sku", "composer": "composer",
+    "balance": "balance", "bal": "balance", "rate": "rate", "sku": "sku", "composer": "composer", "encntr": "encounter", "meds": "medication", "txt": "text", "unt": "unit",
+    "log": "log", "sys": "system",
 }  # fmt: skip
 
 COMPOUNDS: dict[str, list[str]] = {

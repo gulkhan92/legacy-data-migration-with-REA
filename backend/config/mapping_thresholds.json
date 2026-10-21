@@ -1,0 +1,42 @@
+{
+  "auto_margin": 0.0,
+  "auto_similarity": 0.66,
+  "candidates": 3,
+  "llm_min_confidence": 0.7,
+  "margin_full": 0.15,
+  "memory_distance": 0.06,
+  "reject_similarity": 0.62,
+  "similarity_weight": 0.5,
+  "table_min_score": 0.55,
+  "tuning": {
+    "held_out": {
+      "accuracy": 0.913,
+      "columns": 23,
+      "correct": 21,
+      "waiting": 1,
+      "wrong": 1
+    },
+    "held_out_set": {
+      "clinic": [
+        "COND",
+        "MEDS",
+        "OBS"
+      ]
+    },
+    "objective": "correct without help minus 2.0 times wrong without help",
+    "tuning": {
+      "accuracy": 0.9623,
+      "columns": 53,
+      "correct": 51,
+      "waiting": 0,
+      "wrong": 2
+    },
+    "tuning_set": {
+      "clinic": [
+        "ENCNTR",
+        "PATIENT"
+      ],
+      "commerce": "all tables"
+    }
+  }
+}

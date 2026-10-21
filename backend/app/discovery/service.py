@@ -108,7 +108,7 @@ def persist_layout(session: Session, job: Job, discovery: BinaryDiscovery) -> in
                     org_id=job.org_id, job_id=job.id, table_name=table.name, column_name=f.name, inferred_type=f.type,
                     semantic_type=f.semantic, discovery_confidence=f.confidence,
                     profile={"offset": f.offset, "length": f.length, "endianness": f.endianness, "encoding": f.encoding,
-                             "padding": f.padding, "source_hint": f.source_hint, "name_source": f.name_source,
+                             "padding": f.padding, "source_hint": f.source_hint, "name_source": f.name_source, "note": f.note,
                              "record_size": table.record_size, "record_count": table.record_count},
                 )  # fmt: skip
             )

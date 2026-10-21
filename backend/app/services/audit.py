@@ -19,6 +19,7 @@ class AuditAction:
     DISCOVERY = "discovery.run"
     DISCOVERY_FAILED = "discovery.failed"
     PROFILE = "profile.run"
+    MAPPING_RUN = "mapping.run"
     MAPPING_APPROVE = "mapping.approve"
     JOB_LOAD = "job.load"
     JOB_ROLLBACK = "job.rollback"

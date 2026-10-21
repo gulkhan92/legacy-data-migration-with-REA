@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     app_db_password: str = "change-me-app"
 
     embedding_dimensions: int = 384
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    embedding_cache_dir: str = "./var/models"
+    mapping_thresholds_file: str = ""
 
     # Authentication
     jwt_secret: str = DEV_JWT_SECRET

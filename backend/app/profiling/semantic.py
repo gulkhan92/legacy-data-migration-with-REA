@@ -126,7 +126,7 @@ def classify(p: ColumnProfile) -> None:
         p.key_candidate = True
         return
     few = p.distinct_count <= MAX_CODES and (p.distinct_count <= CODE_SHARE * max(non_empty, 1) or words & CODE_WORDS)
-    if few and non_empty >= 20 and (numeric or _is_text(p)):
+    if few and non_empty >= 20 and (p.inferred_type == "integer" or _is_text(p)):  # a fractional number is a quantity, not a code
         p.semantic_type = "enumerated_code"
         return
     if _is_text(p) and p.length and p.length.mean >= 40:

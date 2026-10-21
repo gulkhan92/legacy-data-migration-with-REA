@@ -1,8 +1,8 @@
 # Architecture
 
 This document records design decisions as each phase lands. It currently covers the data model basics
-(Phase 1), the request security model (Phase 2, see `security.md`), discovery (Phase 4) and profiling with data
-quality (Phase 5).
+(Phase 1), the request security model (Phase 2, see `security.md`), discovery (Phase 4), profiling with data
+quality (Phase 5) and embedding based mapping (Phase 6).
 
 ## Pipeline
 
@@ -259,3 +259,99 @@ duplicates, dates and orphans), lower for the warnings, which also report genuin
 * A table with fewer than two columns besides its row number has no duplicate check.
 * SQLite files are parsed in the API process. Moving profiling into the sandbox is possible later because readers take
   a file path only.
+
+## Embedding and mapping (Phase 6)
+
+Mapping decides, for every source column, which target field it feeds. Rules and embeddings do the work; an LLM is only
+asked about what they cannot settle.
+
+### Embeddings
+
+`BAAI/bge-small-en-v1.5` (MIT, 384 dimensions) runs on the CPU through `sentence-transformers`
+(`app/mapping/embedding.py`). The model is loaded once per process, on first use, and every call encodes a batch of 32.
+Vectors are normalised, so cosine similarity is a dot product and pgvector's cosine distance is `1 - similarity`.
+`backend/Dockerfile` installs the CPU build of PyTorch and runs `python -m app.mapping.download_model` while building,
+so the image carries the model and a worker starts without downloading anything.
+
+What is embedded (`app/mapping/texts.py`):
+
+* **Source column**: `table <expanded table name> | column <expanded column name> | type <semantic type in words> |
+  refers to <parent table> | <note found next to a binary field> | examples a, b, c`. Names are expanded with the
+  abbreviation dictionary (`cust_no` is customer number, `l_nm` last name). Examples come from the same metadata view an
+  LLM may see: at most three masked values and none for a PII column, so stored texts and vectors hold no PII. Queries are
+  prefixed with the instruction the bge models are trained with.
+* **Target field**: `table | field | type | description | also called <synonyms>`.
+
+Target schemas are loaded and embedded by `python -m app.mapping.seed_targets` (built in rows, `org_id` NULL, stored in
+`target_fields.embedding`, HNSW cosine index). Source column vectors are stored in `source_columns.embedding`.
+
+### The decision for each column (`decide.py`, `service.py`)
+
+1. **Memory**: the nearest approved mapping of the organization (pgvector on `mapping_memory`) is reused when its cosine
+   distance is under `memory_distance`, its field belongs to the chosen schema and the types are compatible. Zero tokens.
+2. **Type gate** (`compat.py`): fields whose type cannot hold the column are removed before ranking. A date never feeds
+   a numeric field, a reference only feeds references or integers, a key feeds the legacy identifier of a record.
+3. **Target table**: the target table whose compatible fields fit the source table's columns best (mean of the best
+   similarity per column) is chosen for the whole table.
+4. **One to one matching** inside it, best pairs first, never below `reject_similarity`. A field belongs to the column
+   that fits it best, which is what keeps `inv_no` on `orders.source_key` and sends `dtl_no` elsewhere.
+5. **Accept or ask**: a match is accepted when its similarity reaches `auto_similarity` and its margin over the best field
+   that is still free reaches `auto_margin`. Otherwise the column goes to the LLM step with its top three candidates.
+   A column left without a field is unmapped.
+6. **LLM step** (`llm_hook.py`, wired in Phase 7): one batched call per 12 columns and under 5,000 tokens, metadata only,
+   the answer must be one of the offered candidates or none. A confident answer is accepted, anything under
+   `llm_min_confidence` goes to human review.
+
+`confidence = w * similarity + (1 - w) * min(1, margin / margin_full)` with `w` = 0.5.
+Each `mappings` row stores the method (`memory`, `embedding`, `llm`, `human`), the decision (`memory`, `auto`,
+`needs_llm`, `review`, `unmapped`), similarity, margin, confidence, the top candidates and the reason.
+
+### Approval and memory
+
+`approve_mapping` marks a mapping approved (or overridden with another field, which makes the method `human`) and
+upserts a `mapping_memory` row keyed by a signature of the column (expanded table and column name, semantic type, type,
+pattern class): its text, its embedding and an approval counter. A later job with the same legacy system finds the
+approved mappings in memory and spends no tokens on them. Memory is tenant data (row level security), so another
+organization starts with none. The approval routes themselves arrive with the API phase.
+
+### Thresholds (`config/mapping_thresholds.json`)
+
+Nothing is hard coded: `reject_similarity`, `auto_similarity`, `auto_margin`, `table_min_score`, `memory_distance`,
+`llm_min_confidence` and the confidence weights are read from the JSON file (or the file named by
+`MAPPING_THRESHOLDS_FILE`). `python -m app.mapping.tuning` searches a grid on a tuning set and writes the file, together
+with how it was chosen and what it scored. The held out tables are never seen during the search.
+
+| Set | Source tables | Columns | Correct without the LLM |
+|---|---|---|---|
+| Tuning | all of commerce, clinic `PATIENT`, `ENCNTR` | 53 | 96.2 percent |
+| Held out | clinic `COND`, `MEDS`, `OBS` | 23 | 91.3 percent |
+
+The search maximises the columns mapped correctly and counts a wrong match that was accepted without help twice as bad as
+one sent to the LLM.
+
+### Measured results on the sample systems
+
+76 source columns (32 commerce, 44 clinic) scored against `ground_truth.json` (`app/evaluation/mapping_score.py`).
+Eight columns have no counterpart in the target schema and are correct when left unmapped.
+
+| Measure | Result |
+|---|---|
+| Mapped correctly without any LLM call | 72 of 76, **94.7 percent** (target 85 percent) |
+| Wrong, accepted without help | 3: `PROD_MST.prod_nm` and `comp_nm` compete for `products.name`, `OBS.ObsUnit` and `ObsVal` swap |
+| Waiting for the LLM | 1 (`OBS.ObsVal`) |
+| Ceiling after the LLM step (true field among the candidates, or no field) | 73 of 76, **96.1 percent** (target 95 percent) |
+| After the LLM step with a deterministic stand in resolver | 96.1 percent, one batched call on the clinic data, none on commerce |
+
+The 95 percent figure after the LLM step is a ceiling plus a stand in, not a measurement of a real model: the router and the
+providers are built in Phase 7. The tests run the real hand over (batching, token cap, answer validation) with the stand
+in. First run versus repeat run: after approval, a second job on the same legacy system takes its approved columns from
+memory with no tokens.
+
+### Limits
+
+* Matching uses meaning, not data: two columns with similar names and types in one table can swap (see the three errors).
+  The review step exists for these.
+* A target schema with thousands of fields would need a limit on the pgvector query (now every field of the schema is
+  retrieved, which is cheap at this size).
+* Transform rules for the mapped fields (casts, date formats, code maps) are produced in the transform phase from the
+  profile and the mapping.
