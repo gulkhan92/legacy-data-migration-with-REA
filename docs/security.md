@@ -56,6 +56,13 @@ below is covered by an automated test in `backend/tests`.
   container: no network, read only root filesystem and mounts, non root user, all capabilities
   dropped, CPU, memory and process limits, 120 second timeout. Runtime capture is not exposed.
 
+## Profiling and PII
+
+Profiling opens SQLite uploads read only and immutable with query_only on and the schema trust off, and decodes
+binary files with a layout from discovery; neither runs anything from the file. PII columns (rules in
+`app/profiling/pii.py`) keep no values in the stored profile, issue lists show no value for them, and the LLM view of a
+column (`app/profiling/llm_view.py`) contains only its pattern class. Tests check the database content for leaked values.
+
 ## Audit log
 
 Login, failed login, lockout, logout, refresh token reuse, upload and rejected upload are recorded

@@ -18,6 +18,7 @@ class AuditAction:
     UPLOAD_REJECTED = "source.upload_rejected"
     DISCOVERY = "discovery.run"
     DISCOVERY_FAILED = "discovery.failed"
+    PROFILE = "profile.run"
     MAPPING_APPROVE = "mapping.approve"
     JOB_LOAD = "job.load"
     JOB_ROLLBACK = "job.rollback"

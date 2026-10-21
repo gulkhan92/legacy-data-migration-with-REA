@@ -1,7 +1,8 @@
 # Architecture
 
 This document records design decisions as each phase lands. It currently covers the data model basics
-(Phase 1), the request security model (Phase 2, see `security.md`) and discovery (Phase 4).
+(Phase 1), the request security model (Phase 2, see `security.md`), discovery (Phase 4) and profiling with data
+quality (Phase 5).
 
 ## Pipeline
 
@@ -157,3 +158,104 @@ Scoring code: `app/evaluation/discovery_score.py`. The platform never reads the 
 * Writers that use variable length encodings (`Write(string)`), loops over fields or reflection are reported as
   ambiguities, not interpreted.
 * SQLite inspection reads a copy of the file and does not read WAL content that is not committed.
+
+## Profiling and quality (Phase 5)
+
+Profiling reads the source itself and describes every column and every data problem. It runs in two streaming passes
+over the source in chunks of 50,000 rows (pandas), so memory does not grow with the number of rows.
+
+| Source | Reader | Row identifier |
+|---|---|---|
+| SQLite | `sqlite3`, opened read only and immutable, `query_only` on and the schema trust off, so views and triggers of the file never run | `rowid` |
+| Binary data file | numpy structured records decoded with the layout that discovery recovered (offset, length, type, byte order, code page) | zero based record index |
+| Delimited text | `pandas.read_csv` with delimiter and encoding detection | zero based data line |
+
+### Pass 1: the profile
+
+Per column (`ColumnProfile`): inferred type (integer, decimal, boolean, date, timestamp, text), null and blank counts,
+null rate, distinct count (exact up to 200,000 values, then a lower bound), unique ratio, minimum and maximum, length
+statistics, the five most common patterns (digits become `9`, letters `A` or `a`, runs collapsed), the five most common
+values, and:
+
+* **Date format candidates**: for each known format (ISO, `MM/DD/YYYY`, `DD/MM/YYYY`, `YYYYMMDD`, `DD-Mon-YY`, and more)
+  how many values look like it and how many are really valid dates. A column is a date when 90 percent of its values
+  read as dates under some format. The accepted formats are kept, a day first and month first tie is reported as
+  ambiguous, and the minimum and maximum come only from the accepted formats.
+* **Numeric format candidates**: plain, currency (`$`, euro, pound), thousands separators, decimal comma, percent and
+  accounting negatives, with the symbols seen, the quantiles (1, 5, 95 and 99 percent) and the share of negatives.
+* **Integer dates** in binary files (days or minutes): the epoch is the first of 1970-01-01, 1900-01-01 and 1899-12-30
+  under which the largest stored value is not in the future. `0` is a null marker and `-1` an unreadable date marker.
+  Digit strings with leading zeros, or in a code, zip or phone column, stay text.
+
+Then, using only the profile:
+
+* **Semantic types** (`semantic.py`): email, phone, ssn, postal code, date, timestamp, date of birth, currency,
+  identifier, reference, enumerated code, boolean, person name, address, organization name, free text, flags, and
+  plain integer, decimal and text. Rules combine value signals (regular expressions over the distinct values), type,
+  uniqueness, cardinality, the declared semantic of a binary field, and the words of the column name after
+  abbreviation expansion (`vocabulary.py`: `cust_no` is customer number, `l_nm` is last name).
+* **Keys and foreign keys** (`relations.py`): unique integer columns are keys. A column points at a key when at least
+  90 percent of its values are found there (orphans do not prevent it) and it has at least 12 distinct values. When
+  several keys qualify, the one the column covers most wins, which rejects small code columns that fit inside big key
+  ranges by luck.
+* **PII** (`pii.py`): rules on semantic type and name (email, phone, national id, person name, street address, date of
+  birth, death date, postal code, payment card, ip address, geolocation). A PII column keeps no minimum, maximum, example
+  or top value in the stored profile. `llm_view.py` is the only description an LLM may receive: normalized name, type,
+  pattern class and at most five masked distinct samples, and for PII columns the pattern class only.
+
+### Pass 2: quality (`quality.py`)
+
+Rules are derived from the profile and run through a pandera `DataFrameSchema` per table (lazy validation, so every
+failing row is reported). Rules can be replaced by explicit ones when a target schema supplies them.
+
+| Issue | Rule |
+|---|---|
+| `required_null` | no value where at most 6 percent of rows are empty (empty text, NULL or the legacy null marker) |
+| `invalid_date` | not a real date in any accepted format, an integer date outside 1800 to 2100, or the unreadable marker |
+| `out_of_range` | outside the 5 to 95 percent range widened by ten times its spread, and below zero when the column is non negative |
+| `invalid_number` | a value in a numeric column that is not a number |
+| `orphan_fk` | a reference to a key that does not exist (null markers excluded) |
+| `duplicate` | a row equal to an earlier one on every column except row numbers (needs two or more other columns) |
+| `whitespace`, `case_anomaly` | warnings: leading or trailing spaces, or a casing style almost no other value in the column uses |
+
+**Score** (0 to 100). Blocking rows are rows with at least one blocking issue (everything except the two warnings).
+Warning rows are rows with only warnings.
+
+    table score  = 100 * (1 - min(1, (blocking rows + 0.25 * warning rows) / rows))
+    source score = row weighted mean of the table scores
+
+The report also carries the complete issue counts, the issue list (capped at 200,000 entries), the derived rules and the
+formula. The score computed here is the "quality before" figure of the reconciliation report.
+
+### Persistence and API
+
+Per column the results go to `source_columns` (inferred and semantic type, pattern class, null rate, distinct count,
+`pii`, and the full profile under `profile.stats` next to the discovery facts). The profile and the quality report are
+stored as `result:profile` and `result:quality`. Running profiling again replaces them. A job moves from `DISCOVERING`
+to `PROFILED`; delimited text passes through `DISCOVERING` since it has nothing to discover.
+
+| Route | Role | Purpose |
+|---|---|---|
+| `POST /api/v1/jobs/{id}/profile` | analyst, admin | profile a job after discovery |
+| `POST /api/v1/sources/{id}/profile` | analyst, admin | create a job for a delimited text file and profile it |
+| `GET /api/v1/jobs/{id}/profile` | any | the stored profile |
+| `GET /api/v1/jobs/{id}/quality?type=&table=&limit=&offset=` | any | score, per table results, issue counts and a page of issues |
+
+### Measured results on the sample systems
+
+| System | Defects injected | Detected | Notes |
+|---|---|---|---|
+| Commerce SQLite | 590 | 99.8 percent | duplicates, null required, invalid dates, out of range and orphan keys all at 100 percent |
+| Clinic binary file | 3,064 | 94 percent | the five core types at 100 percent; casing noise 76 percent |
+
+Casing noise is found only in columns with a dominant style. Drug names in the clinic data are naturally lower case
+first, so injected casing there cannot be told from the data. Precision is high for the core types (about 1.0 for
+duplicates, dates and orphans), lower for the warnings, which also report genuine oddities. Scoring code:
+`app/evaluation/quality_score.py`.
+
+### Limits
+
+* Rules are inferred until a target schema exists. A rarely empty optional column is reported as `required_null`.
+* A table with fewer than two columns besides its row number has no duplicate check.
+* SQLite files are parsed in the API process. Moving profiling into the sandbox is possible later because readers take
+  a file path only.
