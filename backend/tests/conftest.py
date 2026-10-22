@@ -225,3 +225,23 @@ def client(app_engine: Engine, api_users: ApiUsers, tmp_path, monkeypatch) -> It
 
 def login_as(client: TestClient, email: str, password: str = PASSWORD):  # type: ignore[no-untyped-def]
     return client.post("/api/v1/auth/login", json={"email": email, "password": password})
+
+
+# ---------------------------------------------------------------------------------------------
+# No real network from the tests (Phase 7): provider calls use scripted transports or fake providers.
+# ---------------------------------------------------------------------------------------------
+
+import httpx  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_real_http(monkeypatch):  # type: ignore[no-untyped-def]
+    import os
+
+    if os.environ.get("RUN_LIVE_LLM") == "1":
+        return
+
+    def blocked(self, request):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"A test tried to reach the network: {request.method} {request.url.host}")
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", blocked)

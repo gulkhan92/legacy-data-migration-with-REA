@@ -392,6 +392,15 @@ def match_declared(derived: list[DerivedField], tables: list[dict[str, Any]], us
 # ------------------------------------------------------------------ resolver hook
 
 
+def ambiguity_key(ambiguity: Ambiguity) -> str:
+    """Identifies one open question in a batch of questions sent to a resolver."""
+    return f"{ambiguity.method}@{ambiguity.il_offset}"
+
+
+BatchResolver = Callable[[list[Ambiguity]], dict[str, dict[str, Any]]]
+"""Answers every open ambiguity of a file in one go: {ambiguity_key: {"type", "length", ...}}. This is the shape of the
+`interpret_layout` LLM task, which takes one batched request per file."""
+
 Resolver = Callable[[Ambiguity], dict[str, Any] | None]
 """Called with an ambiguity (and its capped evidence excerpt). Returns {"type", "length", ...} or None.
 

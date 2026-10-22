@@ -131,6 +131,7 @@ def run_discovery(
     *,
     runner: ReaRunner | None = None,
     resolver: cil.Resolver | None = None,
+    batch_resolver: cil.BatchResolver | None = None,
     sample_rows: int | None = None,
 ) -> DiscoveryOutcome:
     """Discover the structure of the job's source. Moves the job UPLOADED -> DISCOVERING (or to FAILED)."""
@@ -155,7 +156,7 @@ def run_discovery(
             outcome = DiscoveryOutcome("sqlite", schema=schema, evidence_count=persist_schema(session, job, schema, runs))
         elif source.kind is SourceKind.DOTNET_BINARY:
             assembly, data = (source, data_source) if _is_assembly(source) else (None, source)
-            discovery = _discover_binary(runner, assembly, data, resolver)
+            discovery = _discover_binary(runner, assembly, data, resolver, batch_resolver)
             outcome = DiscoveryOutcome("dotnet_binary", layout=discovery.layout, evidence_count=persist_layout(session, job, discovery))
         else:
             raise DiscoveryUnsupported("Delimited text files are profiled directly and need no REA discovery")
@@ -169,13 +170,13 @@ def run_discovery(
     return outcome
 
 
-def _discover_binary(runner: ReaRunner, assembly: Source | None, data: Source | None, resolver: cil.Resolver | None) -> BinaryDiscovery:
+def _discover_binary(runner: ReaRunner, assembly: Source | None, data: Source | None, resolver: cil.Resolver | None, batch_resolver: cil.BatchResolver | None = None) -> BinaryDiscovery:
     from contextlib import ExitStack
 
     with ExitStack() as stack:
         assembly_path = stack.enter_context(decrypted_workspace(assembly.storage_path or "", "source.dll")) if assembly else None
         data_path = stack.enter_context(decrypted_workspace(data.storage_path or "", "source.cdb")) if data else None
-        return discover_layout(runner, assembly_path, data_path, resolver=resolver)
+        return discover_layout(runner, assembly_path, data_path, resolver=resolver, batch_resolver=batch_resolver)
 
 
 def load_result(session: Session, job_id: uuid.UUID) -> dict[str, Any] | None:

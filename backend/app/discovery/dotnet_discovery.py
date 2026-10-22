@@ -56,9 +56,11 @@ def _build_tables(
     probe: DirectoryProbe | None,
     encoding: str | None,
     resolver: cil.Resolver | None,
+    batch_resolver: cil.BatchResolver | None = None,
 ) -> tuple[list[RecordLayout], dict[str, dict[str, Any]], list[Ambiguity]]:
     """Turn writer analyses into record layouts, resolving unknown widths from the directory."""
     ambiguities = [a for analysis in analyses for a in analysis.ambiguities]
+    batch_answers = batch_resolver(list(ambiguities)) if batch_resolver and ambiguities else {}
 
     # Pair writers with directory entries: equal record size first, then by order for the rest.
     pairing: dict[int, int] = {}
@@ -84,7 +86,7 @@ def _build_tables(
         fields = analysis.fields
         # 1. Ambiguities the code analysis left open go to the resolver (the interpret_layout task), when there is one.
         for amb in analysis.ambiguities:
-            answer = resolver(amb) if resolver else None
+            answer = resolver(amb) if resolver else batch_answers.get(cil.ambiguity_key(amb))
             target = next((f for f in fields if f.il_offset == amb.il_offset), None)
             if answer and target is not None:
                 target.type = answer.get("type", target.type)
@@ -169,6 +171,7 @@ def discover_layout(
     data_file: Path | None,
     *,
     resolver: cil.Resolver | None = None,
+    batch_resolver: cil.BatchResolver | None = None,
 ) -> BinaryDiscovery:
     blob = data_file.read_bytes() if data_file else None
     probe = find_directory(blob) if blob else None
@@ -195,7 +198,7 @@ def discover_layout(
                     encoding, enc_evidence = cil.find_encoding(index)
                     helpers = cil.find_text_helpers(index)
                     analyses = [cil.analyse_writer(index, w, helpers, encoding) for w in writers]
-                    cil_tables, evidence, ambiguities = _build_tables(analyses, cil.declared_tables(index), probe, encoding, resolver)
+                    cil_tables, evidence, ambiguities = _build_tables(analyses, cil.declared_tables(index), probe, encoding, resolver, batch_resolver)
                     result.notes.append(f"Encoding {encoding}" if encoding else "No text encoding was found")
         except ReaError as exc:
             result.notes.append(f"REA could not analyse the assembly: {exc.kind}")

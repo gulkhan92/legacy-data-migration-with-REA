@@ -1,0 +1,30 @@
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\"answers\": [{\"id\": \"T.c0\", \"target\": \"x.a\", \"confidence\": 0.93, \"hint\": null}, {\"id\": \"T.c1\", \"target\": \"x.b\", \"confidence\": 0.81, \"hint\": \"parse_date\"}]}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 640,
+      "candidatesTokenCount": 96,
+      "totalTokenCount": 748,
+      "cachedContentTokenCount": 300,
+      "thoughtsTokenCount": 12
+    },
+    "modelVersion": "gemini-2.5-flash-lite"
+  }
+}

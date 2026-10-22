@@ -10,6 +10,9 @@ from app.api.deps import client_ip, get_principal, get_tenant_db, require_role
 from app.core.security import Principal
 from app.db.models import Job, TargetField, TargetSchema
 from app.db.models.enums import JobStatus, Role
+from app.db.session import make_session_factory
+from app.llm.adapters import mapping_resolver
+from app.llm.factory import context_for, get_router, llm_available
 from app.mapping import service
 from app.mapping.embedding import EmbeddingUnavailable
 from app.services.audit import AuditAction, record_audit
@@ -42,7 +45,9 @@ def map_job(
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     try:
-        outcome = service.run_mapping(db, job, body.target_schema)
+        # The LLM only sees columns the rules could not settle; without a provider key they wait for review.
+        resolver = mapping_resolver(get_router(), context_for(principal.org_id, job.id, make_session_factory())) if llm_available() else None
+        outcome = service.run_mapping(db, job, body.target_schema, resolver=resolver)
     except service.MappingUnavailable as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from None
     except EmbeddingUnavailable:

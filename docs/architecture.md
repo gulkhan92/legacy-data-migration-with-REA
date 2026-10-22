@@ -2,7 +2,7 @@
 
 This document records design decisions as each phase lands. It currently covers the data model basics
 (Phase 1), the request security model (Phase 2, see `security.md`), discovery (Phase 4), profiling with data
-quality (Phase 5) and embedding based mapping (Phase 6).
+quality (Phase 5), embedding based mapping (Phase 6) and the LLM router (Phase 7).
 
 ## Pipeline
 
@@ -298,7 +298,7 @@ Target schemas are loaded and embedded by `python -m app.mapping.seed_targets` (
 5. **Accept or ask**: a match is accepted when its similarity reaches `auto_similarity` and its margin over the best field
    that is still free reaches `auto_margin`. Otherwise the column goes to the LLM step with its top three candidates.
    A column left without a field is unmapped.
-6. **LLM step** (`llm_hook.py`, wired in Phase 7): one batched call per 12 columns and under 5,000 tokens, metadata only,
+6. **LLM step** (`llm_hook.py`, served by the router of Phase 7): one batched call per 12 columns and under 5,000 tokens, metadata only,
    the answer must be one of the offered candidates or none. A confident answer is accepted, anything under
    `llm_min_confidence` goes to human review.
 
@@ -342,8 +342,8 @@ Eight columns have no counterpart in the target schema and are correct when left
 | Ceiling after the LLM step (true field among the candidates, or no field) | 73 of 76, **96.1 percent** (target 95 percent) |
 | After the LLM step with a deterministic stand in resolver | 96.1 percent, one batched call on the clinic data, none on commerce |
 
-The 95 percent figure after the LLM step is a ceiling plus a stand in, not a measurement of a real model: the router and the
-providers are built in Phase 7. The tests run the real hand over (batching, token cap, answer validation) with the stand
+The 95 percent figure after the LLM step is a ceiling plus a stand in, not a measurement of a real model: the router of Phase 7
+is built and tested with scripted providers, but no real provider has been called yet. The tests run the real hand over (batching, token cap, answer validation) with the stand
 in. First run versus repeat run: after approval, a second job on the same legacy system takes its approved columns from
 memory with no tokens.
 
@@ -355,3 +355,125 @@ memory with no tokens.
   retrieved, which is cheap at this size).
 * Transform rules for the mapped fields (casts, date formats, code maps) are produced in the transform phase from the
   profile and the mapping.
+
+## LLM router and token budget (Phase 7)
+
+An LLM is the last resort. The router (`app/llm/`) sits in front of two providers and enforces the plan's token rules in
+code. Today two tasks use it: `resolve_mappings` (columns the mapping rules could not settle) and `interpret_layout` (writes
+of bytes in a binary file whose type or width the code analysis could not determine). Without a provider key everything
+still works; the unsettled items wait for human review.
+
+### Interface and providers
+
+`LLMRouter.complete_json(task, payload, context)` returns a validated Pydantic object. Providers implement one method:
+
+| Provider | Endpoint | Output control |
+|---|---|---|
+| `GroqProvider` | OpenAI compatible chat completions, model `openai/gpt-oss-20b` | `response_format` of type `json_schema` in strict mode, `reasoning_effort` low, `temperature` 0, `max_completion_tokens` 800 (reasoning tokens count against it) |
+| `GeminiProvider` | REST `generateContent`, model from `GEMINI_MODEL` | `responseMimeType` JSON with a `responseSchema` (OpenAPI subset), `temperature` 0, `maxOutputTokens` 800, key in the `x-goog-api-key` header |
+
+The default Gemini model is a Flash-Lite class model. Free models and quotas change often and published figures disagree, so
+confirm the current free models in Google AI Studio and set `GEMINI_MODEL` before relying on it. Keys come only from
+`GROQ_API_KEY` and `GEMINI_API_KEY`; they are `SecretStr` values, are never stored in the database, never returned by an API
+route, and appear in no log or error message.
+
+### What happens to a request
+
+1. **Payload guard** (`guard.py`): refuses fields such as `rows` or `api_key`, anything that looks like an email address, social
+   security number, card number, phone number or a long digit run (digits the profile view already masked as `9999` pass), and
+   payloads over 5,000 tokens. The payload builders already send metadata only; the guard does not trust them.
+2. **Cache** (`llm_cache`, per organization): key is the SHA-256 of the task, the SHA-256 of the prompt file and the normalized
+   payload (sorted keys, floats rounded to two places). A hit costs zero tokens, is logged as `cache_hit`, and is re-validated
+   against the current request. An exhausted budget still serves cached answers.
+3. **Budgets**, checked against a pessimistic estimate (request plus the 800 token output cap) before anything is sent:
+   the job's token budget (`jobs.token_budget`, 6,000 by default), the job's call limit (2 by default, counting answered calls)
+   and the organization's daily token budget (100,000 by default, summed from `llm_calls`). A request that would exceed a
+   budget is not sent. Actual usage is charged to the job after every answered request, including wasted and repair requests,
+   so a job can overshoot only by the error of one estimate.
+4. **Providers in order** (the organization's setting, default Groq then Gemini). One is skipped when it has no key, its
+   circuit breaker is open, or its local rate limit bucket has no room.
+5. **Retries and failover**: 429, 5xx and timeouts are retried (two tries per provider) with exponential backoff and jitter,
+   waiting at least as long as `Retry-After` when that is 10 seconds or less. A longer wait, or running out of tries, fails over
+   to the next provider at once. Other 4xx answers (bad key, bad request) are not retried.
+6. **Validation and repair**: the answer must be JSON that matches the task schema (fenced JSON is accepted) and pass the
+   task's own checks: one answer per id, and every chosen field must be one of the candidates offered for that column. If not,
+   one repair request shows the model what was wrong. If that fails, or the output was cut off at the cap, the next provider is
+   tried.
+7. **Record**: every request to a provider writes an `llm_calls` row (provider, model, task, tokens in and out, cached tokens,
+   latency, status, cache hit, job, error code, prompt version). A good answer is cached and its tokens added to the job.
+   Records are written in their own transactions, so they survive a failed request.
+
+If every provider fails the router raises `AllProvidersFailed`; the adapters turn that into "no answer" and the mapping decisions
+go to review. The job is never lost.
+
+### Rate limits, circuit breaker, backoff (`resilience.py`)
+
+* **Token bucket per provider**, seeded from the configured limits (Groq 8,000 tokens and 30 requests per minute, Gemini from
+  settings) and replaced by the provider's own figures whenever a response carries them (Groq
+  `x-ratelimit-remaining-tokens` and `-requests`). Cached prompt tokens do not count against it. A 429 empties the bucket until
+  the provider's wait is over.
+* **Circuit breaker**: three consecutive failures open it for 60 seconds, then one trial request is let through (half open); a
+  success closes it, a failure opens it again.
+* **Backoff**: `min(8 s, 0.5 s * 2^attempt)` with a random delay between half of that and all of it.
+
+All three take an injectable clock, so the tests need no real waiting.
+
+### Prompts (`app/llm/prompts/`)
+
+Versioned files, `<task>.v1.txt`: a constant system prompt (about 300 tokens, no data) that always comes first so provider
+prompt caching applies, followed by the variable JSON payload as the user message. The prompt file's SHA-256 is part of the
+cache key, so an edited prompt can never serve answers produced by an older one. Output schemas are Pydantic models turned into
+strict JSON schemas (every property required, no extra properties, optional values as a union with null).
+
+### Token minimisation, as built
+
+| Rule of the plan | Where it is enforced |
+|---|---|
+| Deterministic first, LLM only for what rules cannot decide | mapping rules and memory run first; only `needs_llm` columns and open layout ambiguities are sent |
+| At most 2 calls and under 6,000 tokens per job, enforced in code and recorded | job call limit and token budget, `llm_calls`, `jobs.tokens_used` |
+| One batched call per task, about 12 columns, every request under 5,000 tokens | `llm_hook.build_requests`, the payload guard; layout ambiguities all go in one request |
+| Metadata only, never rows, never PII values | profile views, the payload guard |
+| Constant prefix first | the system message is the prompt file, nothing else |
+| Temperature 0, low reasoning effort, 800 token cap, strict JSON, one repair | provider request builders, router |
+| Cache every answer, reuse approved mappings | `llm_cache`, mapping memory |
+
+Free tier providers may use prompts to improve their products. Only synthetic or masked data is sent, and that statement belongs
+in the project README.
+
+### Settings and admin hooks
+
+Organization settings (`org_settings`, row level security like every tenant table) hold the provider order and the three
+budgets. New jobs take their token budget from the organization's setting at creation.
+
+| Route (admin only) | Purpose |
+|---|---|
+| `GET /api/v1/admin/llm-settings` | provider order, budgets, tokens used today, per provider: model, key configured, circuit state, rate limit room |
+| `PUT /api/v1/admin/llm-settings` | change them (validated, audited as `settings.change` with old and new values) |
+| `POST /api/v1/admin/llm-settings/test-connection` | one tiny request to one provider, no failover, no cache, counted in the daily budget |
+| `GET /api/v1/admin/llm-usage?days=7` | tokens, calls, cache hits and failed attempts per day and provider, and the tokens the cache saved |
+
+### Testing without a provider
+
+CI never calls a real provider: a fixture makes any real HTTP request from a test fail. Provider adapters are tested against
+recorded response files in `tests/recorded/llm/` (Groq and Gemini success, 429 with and without a long wait, 5xx, bad key,
+invalid JSON, wrong target, output cut off, blocked prompt) through a scripted `httpx` transport. The recorded files follow
+the providers' documented response shapes and are meant to be replaced by real captures when keys are at hand. The router is
+tested with scripted fake providers and a manual clock. `tests/test_llm_live.py` runs one tiny synthetic request per configured
+provider when `RUN_LIVE_LLM=1`.
+
+### Results against the acceptance checks
+
+| Check | Result |
+|---|---|
+| A simulated 429 and timeout trigger failover without losing the request | tested: Groq 429 then timeout, answer from Gemini; and with every provider down the mapping job still completes, the column goes to review |
+| Budgets stop a runaway job | tested: a loop of distinct requests stops at the job token budget (never exceeded) or at the call limit, and the refused request never reaches a provider |
+| A repeated run of the same fixture uses zero tokens | tested with the clinic fixture: its one unsettled column goes out in one request, a second mapping run adds no tokens and the provider is not asked again (cache hit logged); commerce has no unsettled column and sends nothing |
+| A first run stays under 6,000 tokens | the clinic fixture sends one request of about 430 estimated input tokens (264 for the constant prompt, 168 for the column) with an output cap of 800; a worst case of 24 unsettled columns (two batched requests) stays under 6,000 in the test |
+
+### Limits
+
+* No tokenizer is installed: token counts before a call are estimates (characters divided by four, plus 10 percent). Recorded
+  usage always comes from the provider.
+* The Groq output cap includes reasoning tokens. With low reasoning effort 800 is enough for 12 answers, and a cut off answer is
+  treated as a schema failure and repaired.
+* The circuit breaker and rate limit buckets are per process. Several workers each keep their own.

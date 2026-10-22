@@ -1,0 +1,36 @@
+{
+  "status": 200,
+  "headers": {
+    "x-ratelimit-limit-requests": "1000",
+    "x-ratelimit-limit-tokens": "8000",
+    "x-ratelimit-remaining-requests": "997",
+    "x-ratelimit-remaining-tokens": "7216",
+    "x-ratelimit-reset-requests": "2m59.56s",
+    "x-ratelimit-reset-tokens": "5.88s",
+    "content-type": "application/json"
+  },
+  "body": {
+    "id": "chatcmpl-recorded-1",
+    "object": "chat.completion",
+    "model": "openai/gpt-oss-20b",
+    "choices": [
+      {
+        "index": 0,
+        "finish_reason": "stop",
+        "message": {
+          "role": "assistant",
+          "content": "{\"answers\": [{\"id\": \"T.c0\", \"target\": \"x.a\", \"confidence\": 0.93, \"hint\": null}, {\"id\": \"T.c1\", \"target\": \"x.b\", \"confidence\": 0.81, \"hint\": \"parse_date\"}]}",
+          "reasoning": "short reasoning"
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 612,
+      "completion_tokens": 118,
+      "total_tokens": 730,
+      "prompt_tokens_details": {
+        "cached_tokens": 480
+      }
+    }
+  }
+}

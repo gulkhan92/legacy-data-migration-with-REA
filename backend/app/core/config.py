@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import model_validator
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Development only values. Startup refuses them when ENVIRONMENT is not "local" or "test".
@@ -52,6 +52,30 @@ class Settings(BaseSettings):
     rea_timeout_seconds: int = 120
     rea_container_workdir: str = ""
     rea_sample_rows: int = 5
+
+    # LLM router (Phase 7). Keys come from the environment only and are never stored or logged.
+    groq_api_key: SecretStr = SecretStr("")
+    gemini_api_key: SecretStr = SecretStr("")
+    groq_model: str = "openai/gpt-oss-20b"
+    # Confirm the current free models and quotas in Google AI Studio before choosing a default.
+    # A Flash-Lite class model is the safest start.
+    gemini_model: str = "gemini-2.5-flash-lite"
+    llm_provider_order: str = "groq,gemini"
+    llm_timeout_seconds: float = 30.0
+    llm_max_output_tokens: int = 800
+    llm_job_token_budget: int = 6000
+    llm_org_daily_token_budget: int = 100_000
+    llm_max_calls_per_job: int = 2
+    llm_retry_attempts: int = 2  # tries per provider for 429, 5xx and timeouts
+    llm_backoff_base_seconds: float = 0.5
+    llm_backoff_cap_seconds: float = 8.0
+    llm_max_retry_after_seconds: float = 10.0  # a longer Retry-After means failover, not waiting
+    llm_breaker_failures: int = 3
+    llm_breaker_open_seconds: float = 60.0
+    groq_tokens_per_minute: int = 8000
+    groq_requests_per_minute: int = 30
+    gemini_tokens_per_minute: int = 250_000
+    gemini_requests_per_minute: int = 15
 
     # Uploads
     upload_dir: str = "./var/uploads"

@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import client_ip, get_principal, get_tenant_db, require_role
 from app.core.security import Principal
+from app.llm.store import DbStore
+from app.db.session import make_session_factory
 from app.db.models import Job, Source
 from app.db.models.enums import JobStatus, Role, SourceKind
 from app.db.repositories.jobs import JobRepository
@@ -65,7 +67,8 @@ def profile_text_source(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found")
     if source.kind is not SourceKind.CSV:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Run discovery for databases and binary files first")
-    job = JobRepository(db).add(Job(source_id=source.id, created_by=principal.user_id, status=JobStatus.CREATED))
+    job = JobRepository(db).add(Job(source_id=source.id, created_by=principal.user_id, status=JobStatus.CREATED,
+                          token_budget=DbStore(principal.org_id, make_session_factory()).org_settings().job_token_budget))
     return _run(db, job, principal, request)
 
 

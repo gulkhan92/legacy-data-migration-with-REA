@@ -63,6 +63,14 @@ binary files with a layout from discovery; neither runs anything from the file. 
 `app/profiling/pii.py`) keep no values in the stored profile, issue lists show no value for them, and the LLM view of a
 column (`app/profiling/llm_view.py`) contains only its pattern class. Tests check the database content for leaked values.
 
+## LLM calls
+
+Provider keys come from the environment (`GROQ_API_KEY`, `GEMINI_API_KEY`) as secret values: they are not stored in the database,
+not returned by any route and not logged. Nothing leaves the system without passing the payload guard (no rows, no values that look
+like personal data, size limit) and the PII-free profile views. Free tier providers may use prompts to improve their products,
+which is why only synthetic or masked data is sent. Every request is recorded (`llm_calls`) without its content. Token budgets per
+job and per organization and a per job call limit bound what a runaway job can send. The tests fail on any real network call.
+
 ## Audit log
 
 Login, failed login, lockout, logout, refresh token reuse, upload and rejected upload are recorded

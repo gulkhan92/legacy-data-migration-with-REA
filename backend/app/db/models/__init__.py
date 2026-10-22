@@ -1,6 +1,6 @@
 from app.db.models.billing import DailyMetric, Invoice, InvoiceLine, Plan, Subscription, UsageEvent
 from app.db.models.identity import AuditLog, Lead, Membership, Organization, RefreshToken, User
-from app.db.models.llm import LlmCache, LlmCall
+from app.db.models.llm import LlmCache, LlmCall, OrgSettings
 from app.db.models.pipeline import (
     DiscoveryEvidence,
     Job,
@@ -46,6 +46,7 @@ __all__ = [
     "Observation",
     "Order",
     "OrderItem",
+    "OrgSettings",
     "Organization",
     "Patient",
     "Plan",

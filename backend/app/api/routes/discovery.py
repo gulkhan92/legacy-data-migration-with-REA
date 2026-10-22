@@ -8,10 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import client_ip, get_principal, get_tenant_db, require_role
 from app.core.security import Principal
+from app.llm.store import DbStore
 from app.db.models import DiscoveryEvidence, Job, Source
 from app.db.models.enums import JobStatus, Role, SourceKind
 from app.db.repositories.jobs import JobRepository
+from app.db.session import make_session_factory
 from app.discovery import service
+from app.llm.adapters import layout_resolver
+from app.llm.factory import context_for, get_router, llm_available
 from app.discovery.rea_adapter import ReaError
 from app.services.audit import AuditAction, record_audit
 
@@ -60,9 +64,12 @@ def discover(
     if source.kind is SourceKind.CSV:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Delimited text files are profiled directly")
 
-    job = JobRepository(db).add(Job(source_id=source.id, data_source_id=data_source_id, created_by=principal.user_id, status=JobStatus.CREATED))
+    job = JobRepository(db).add(Job(source_id=source.id, data_source_id=data_source_id, created_by=principal.user_id, status=JobStatus.CREATED,
+                          token_budget=DbStore(principal.org_id, make_session_factory()).org_settings().job_token_budget))
+    db.commit()  # the router logs and charges tokens in its own transactions, so the job must be visible to them
     try:
-        outcome = service.run_discovery(db, job)
+        batch = layout_resolver(get_router(), context_for(principal.org_id, job.id, make_session_factory())) if llm_available() else None
+        outcome = service.run_discovery(db, job, batch_resolver=batch)
     except ReaError as exc:
         db.commit()  # keep the FAILED job and its event
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Analysis failed: {exc.kind}") from None

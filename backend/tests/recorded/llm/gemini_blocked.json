@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "promptFeedback": {
+      "blockReason": "SAFETY"
+    },
+    "usageMetadata": {
+      "promptTokenCount": 640,
+      "totalTokenCount": 640
+    }
+  }
+}

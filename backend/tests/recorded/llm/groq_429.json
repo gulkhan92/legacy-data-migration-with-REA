@@ -1,0 +1,16 @@
+{
+  "status": 429,
+  "headers": {
+    "retry-after": "2",
+    "x-ratelimit-remaining-tokens": "0",
+    "x-ratelimit-reset-tokens": "1.9s",
+    "content-type": "application/json"
+  },
+  "body": {
+    "error": {
+      "message": "Rate limit reached for model `openai/gpt-oss-20b` in organization `org_x` on tokens per minute (TPM): Limit 8000, Used 7900, Requested 612.",
+      "type": "tokens",
+      "code": "rate_limit_exceeded"
+    }
+  }
+}

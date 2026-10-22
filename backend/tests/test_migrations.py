@@ -16,6 +16,7 @@ EXPECTED_PUBLIC_TABLES = {
     "target_schemas", "target_fields", "mapping_memory",
     "llm_calls", "llm_cache",
     "plans", "subscriptions", "usage_events", "invoices", "invoice_lines", "daily_metrics",
+    "org_settings",
 }  # fmt: skip
 EXPECTED_WAREHOUSE_TABLES = {
     "customers", "products", "orders", "order_items",
@@ -78,7 +79,8 @@ def test_downgrade_one_step_removes_policies_only(fresh_db: str) -> None:
         assert conn.execute(text("SELECT count(*) FROM pg_policies")).scalar_one() == 0
         assert conn.execute(text("SELECT count(*) FROM pg_tables WHERE rowsecurity")).scalar_one() == 0
     engine.dispose()
-    assert len(_tables(fresh_db)) == len(EXPECTED_PUBLIC_TABLES) + len(EXPECTED_WAREHOUSE_TABLES) + 1
+    # Tables added by later migrations (org_settings) are gone, the initial schema stays.
+    assert len(_tables(fresh_db)) == len(EXPECTED_PUBLIC_TABLES - {"org_settings"}) + len(EXPECTED_WAREHOUSE_TABLES) + 1
 
 
 def test_pgvector_extension_and_hnsw_cosine_indexes(admin_engine) -> None:  # type: ignore[no-untyped-def]

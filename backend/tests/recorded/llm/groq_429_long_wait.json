@@ -1,0 +1,14 @@
+{
+  "status": 429,
+  "headers": {
+    "retry-after": "3600",
+    "content-type": "application/json"
+  },
+  "body": {
+    "error": {
+      "message": "Rate limit reached for model `openai/gpt-oss-20b` on tokens per day (TPD).",
+      "type": "tokens",
+      "code": "rate_limit_exceeded"
+    }
+  }
+}

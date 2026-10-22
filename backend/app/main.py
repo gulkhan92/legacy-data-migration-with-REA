@@ -4,7 +4,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.api.routes import admin, auth, discovery, mapping, profiling, sources
+from app.api.routes import admin, admin_llm, auth, discovery, mapping, profiling, sources
 from app.core.config import get_settings
 from app.core.middleware import CsrfMiddleware, SecurityHeadersMiddleware
 from app.core.rate_limit import limiter
@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(sources.router)
     app.include_router(admin.router)
+    app.include_router(admin_llm.router)
     app.include_router(discovery.router)
     app.include_router(profiling.router)
     app.include_router(mapping.router)
