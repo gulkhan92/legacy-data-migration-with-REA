@@ -24,6 +24,7 @@ from app.profiling.readers import ColumnHint
 from app.profiling.vocabulary import expanded_name
 
 VALUE_CAP = 200_000
+CODE_VALUE_LIMIT = 50
 SHAPE_CAP = 1_000
 NUMBER_CAP = 2_000_000
 TYPE_SHARE = 0.9  # share of values that must read as a type (a few injected or natural defects are tolerated)
@@ -84,6 +85,20 @@ SIGNAL_TESTS = {
     "payment_card": _luhn,
     "postal": lambda t: bool(re.fullmatch(r"\d{5}(-\d{4})?|\d{5}-\d{3}|\d{4,5}|[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d|[A-Za-z]{1,2}\d[A-Za-z\d]? ?\d[A-Za-z]{2}", t)),
 }
+
+
+def _code_text(value: object) -> str:
+    """A code as text: whole numbers without a decimal point (1.0 becomes 1)."""
+    if isinstance(value, float) and value == int(value):
+        return str(int(value))
+    return str(value)[:60]
+
+
+def _code_sort(value: object) -> tuple[int, float, str]:
+    try:
+        return (0, float(value), "")  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return (1, 0.0, str(value))
 
 
 def shape(value: str) -> str:
@@ -296,6 +311,8 @@ class ColumnAccumulator:
         if not self.native:
             profile.signals = self._signals(non_empty)
         profile.top_values = [ValueCount(value=str(v)[:40], count=c) for v, c in self.values.most_common(5)]
+        if len(self.values) <= CODE_VALUE_LIMIT and not self.approximate:
+            profile.code_values = [ValueCount(value=_code_text(v), count=c) for v, c in sorted(self.values.items(), key=lambda kv: _code_sort(kv[0]))]
         return profile
 
     def _signals(self, non_empty: int) -> dict[str, float]:

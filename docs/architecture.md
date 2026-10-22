@@ -477,3 +477,47 @@ provider when `RUN_LIVE_LLM=1`.
 * The Groq output cap includes reasoning tokens. With low reasoning effort 800 is enough for 12 answers, and a cut off answer is
   treated as a schema failure and repaired.
 * The circuit breaker and rate limit buckets are per process. Several workers each keep their own.
+
+## Transform, load and reconciliation (Phase 8)
+
+After mappings are approved, the job is moved into the warehouse in four steps, each of which can be inspected and none of which changes the warehouse until the last.
+
+### Rules are data, not code (`app/transform/dsl.py`)
+
+A transform rule is a list of steps such as `{"op": "parse_date", "formats": [...]}`. Only the operations in the `OPS` registry exist (text, trim, case, integer and decimal casts, cents to decimal, dates and timestamps, epoch days and minutes, phone numbers, code maps, split, concat, default, regex extract, bit flag, boolean, not-null). Parameters are validated by pydantic models that forbid extra keys, regular expressions are checked for nested quantifiers and backreferences, and nothing is ever passed to `eval`. A rule that is not valid is rejected with a message that names the step. Failed values carry a kind (`invalid_date`, `invalid_number`, `invalid_code`, `invalid_value`) that becomes the quarantine reason.
+
+### Generation (`generate.py`, `rules.py`)
+
+Rules are derived from the column profile and the approved mapping, never from an LLM: the dominant date format, thousands and decimal separators, the null markers of numeric references, flag bits, title-case anomalies. A rule a person wrote is kept on regeneration. Numeric codes whose meaning is not in the data (an order status of 1, 2, 3) produce a rule in state `needs_input`; an analyst supplies the code map (`PUT .../rules/{id}/code-map`) and the dry run and load stay blocked until every required rule is ready. A derived field (`patients.is_deceased` from the death date) is generated from another column of the same table.
+
+### Plan and dry run (`plan.py`, `dry_run.py`)
+
+`build_plan` turns rules into a per-table plan ordered parents first and reports issues that block a load: a target field with no rule, a reference whose parent table is not part of the load, a rule that is invalid or not ready, a table fed from two source tables. The dry run applies the plan to the first 500 rows of every table and returns before and after rows (clean and failing), the quarantine reasons that would occur, and per rule the null, failure and out-of-range counts. A rule that fails on 50 percent or more of the sampled values blocks the load (it is probably wrong), 20 percent warns.
+
+### Load (`load.py`, `service.py`)
+
+1. The source is streamed in chunks, transformed by the same code as the dry run, and written with `COPY` into a temporary staging table per target table, with the reason for rows that failed a rule. The same pass accumulates the numbers the reconciliation needs (row ids, key set, null counts, numeric sums, a deterministic row sample).
+2. Inside SQL, the staged rows are checked: references to a parent that does not exist or was quarantined (`orphan_fk`), the same key and content seen again (`duplicate`), the same content under another key (`duplicate`, only when the table has at least five business fields and fewer than 10 percent of rows repeat, otherwise plain names and prices would be mistaken for copies), and the same key with different content (`duplicate_key`).
+3. Valid rows are inserted into the warehouse with a `CAST` to the column type and references resolved to parent ids. Rejected rows go to `quarantined_rows` with the source row number, the reason, a human readable detail and the raw source row as JSON.
+4. Everything runs in one savepoint inside the job's transaction. If a reconciliation check fails the savepoint is rolled back, the job becomes FAILED and a failed report is stored. A unique `(job_id, source_key)` index on every warehouse table makes a second load of a job impossible, and the service also refuses it explicitly.
+
+### Reconciliation (`reconcile.py`)
+
+The expected values come from the staging pass, the actual values are read back from the warehouse, so a bug in the SQL move cannot hide itself. Per table: row accounting (source = staged = loaded + quarantined), every quarantined row has a reason, distinct keys, null counts per field, sums of numeric fields (exact decimals) and a sample of rows compared field by field. Quality is scored before (from the profile) and after (profiling the warehouse tables). The report is stored per job and served by `GET .../reconciliation`.
+
+### Rollback
+
+`POST .../rollback` deletes everything a job loaded, by job id, plus its quarantine rows and report, and moves the job to ROLLED_BACK. Warehouse rows are tagged with the job id, so nothing else is touched.
+
+### Measured results on the sample systems
+
+Every injected defect on a mapped column is found with the expected reason: all null-required, invalid-date and out-of-range defects (the clinic has a few extra out-of-range values that are genuine outliers beyond the learned bounds: 2 in encounters, 17 in medications), and 36 of 45, 70 of 70, 8 of 8 duplicates in commerce order items, products and orders (the other 9 copies were of rows that were quarantined for another reason and carry that reason). Rows are then either loaded or quarantined: 5,515 loaded and 823 quarantined in commerce. Quality rises from 91.3 to 99.5 on commerce.
+
+### Limits
+
+- The meaning of numeric codes cannot be inferred and always needs a person.
+- Case normalisation of title-dominant columns is conservative: only values that look wrong (all caps, all lower, inverted) are rewritten, so McDonald stays.
+- Range bounds are learned from the data, so genuinely extreme but valid values (a very expensive medication) are quarantined as out_of_range and need a reviewer to release or widen the bound.
+- A defect on a source column that has no target field (for example patient healthcare expenses) is not seen, because the column is not loaded.
+- Quarantine includes children of quarantined parents (`orphan_fk`), which is intended but makes the quarantine larger than the number of injected defects.
+- The mapping engine can still pair a column wrongly (commerce `comp_nm` with `products.name`); a reviewer rejects or overrides it with `POST .../mappings/{id}/reject` or `/approve`.

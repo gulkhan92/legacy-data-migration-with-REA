@@ -43,6 +43,7 @@ def detect_pii(p: ColumnProfile) -> list[str]:
 def redact(p: ColumnProfile) -> None:
     """Remove every value derived field from the profile of a PII column."""
     p.top_values = []
+    p.code_values = []
     p.min = None
     p.max = None
     if p.date:

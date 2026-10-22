@@ -155,9 +155,20 @@ class TransformRule(IdMixin, CreatedAtMixin, TenantMixin, Base):
     __tablename__ = "transform_rules"
 
     job_id: Mapped[uuid.UUID] = _fk("jobs.id", ondelete="CASCADE")
-    mapping_id: Mapped[uuid.UUID] = _fk("mappings.id", ondelete="CASCADE")
+    mapping_id: Mapped[uuid.UUID | None] = _fk("mappings.id", nullable=True, ondelete="CASCADE")  # derived rules have none
+    target_field_id: Mapped[uuid.UUID | None] = _fk("target_fields.id", nullable=True, ondelete="SET NULL")
+    target_table: Mapped[str] = mapped_column(String(100), nullable=False, server_default="")
+    target_field: Mapped[str] = mapped_column(String(100), nullable=False, server_default="")
+    source_table: Mapped[str | None] = mapped_column(String(255))
+    inputs: Mapped[list[str]] = mapped_column(JSONB, nullable=False, server_default="[]")  # source columns the rule reads
     steps: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, server_default="[]")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="ready")  # ready, needs_input, failed
+    origin: Mapped[str] = mapped_column(String(20), nullable=False, server_default="deterministic")  # deterministic, hint, human, derived
+    failures: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}")
+    notes: Mapped[list[str]] = mapped_column(JSONB, nullable=False, server_default="[]")
     sample_failure_count: Mapped[int | None] = mapped_column(Integer)
+
+    __table_args__ = (Index("uq_transform_rules_job_target", "job_id", "target_table", "target_field", unique=True),)
 
 
 class QuarantinedRow(IdMixin, CreatedAtMixin, TenantMixin, Base):
@@ -169,6 +180,8 @@ class QuarantinedRow(IdMixin, CreatedAtMixin, TenantMixin, Base):
     reason_code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     reason_detail: Mapped[str | None] = mapped_column(Text)
     raw_row: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+
+    __table_args__ = (Index("ix_quarantined_rows_job_id_reason_code", "job_id", "reason_code"),)
 
 
 class ReconciliationReport(IdMixin, CreatedAtMixin, TenantMixin, Base):

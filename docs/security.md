@@ -78,6 +78,14 @@ now. Mapping approval, load, rollback and settings change have their action name
 recorded when those features are built. The table is append only for the application role, and
 organization admins read only their own organization's entries.
 
+## Transform and load
+
+- Transform rules are data validated against a fixed whitelist of operations. There is no `eval`, no import and no user supplied SQL: identifiers in the load SQL come from the target schema, values are bound parameters or `COPY` data.
+- Regular expressions in rules are length limited and refused when they nest quantifiers or use backreferences, so a rule cannot hang the worker.
+- Staging tables are temporary, per connection, and the final insert goes through the same row level security as everything else: every warehouse and quarantine row carries the organization, and a job of another organization is a 404.
+- Mutations (approve, reject, rules, code maps, dry run, load, rollback) need the analyst role; reading rules, reports and quarantine needs any signed in user. Load and rollback are written to the audit log.
+- The raw source row of a quarantined record is kept so it can be fixed, which means it may contain personal data. It is protected by the same row level security and is deleted by a rollback of the job.
+
 ## Known limits
 
 - Access tokens are stateless and remain valid until they expire (15 minutes) after logout.

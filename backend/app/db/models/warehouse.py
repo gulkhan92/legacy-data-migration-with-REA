@@ -53,7 +53,7 @@ def _wh_fk(table: str) -> Mapped[uuid.UUID]:
 
 class Customer(WarehouseRow, Base):
     __tablename__ = "customers"
-    __table_args__ = {"schema": WAREHOUSE_SCHEMA}
+    __table_args__ = (Index("uq_customers_job_source_key", "job_id", "source_key", unique=True), {"schema": WAREHOUSE_SCHEMA})
 
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
@@ -69,7 +69,7 @@ class Customer(WarehouseRow, Base):
 
 class Product(WarehouseRow, Base):
     __tablename__ = "products"
-    __table_args__ = {"schema": WAREHOUSE_SCHEMA}
+    __table_args__ = (Index("uq_products_job_source_key", "job_id", "source_key", unique=True), {"schema": WAREHOUSE_SCHEMA})
 
     name: Mapped[str] = mapped_column(String(300), nullable=False)
     category: Mapped[str | None] = mapped_column(String(100))
@@ -78,7 +78,7 @@ class Product(WarehouseRow, Base):
 
 class Order(WarehouseRow, Base):
     __tablename__ = "orders"
-    __table_args__ = {"schema": WAREHOUSE_SCHEMA}
+    __table_args__ = (Index("uq_orders_job_source_key", "job_id", "source_key", unique=True), {"schema": WAREHOUSE_SCHEMA})
 
     customer_id: Mapped[uuid.UUID] = _wh_fk("customers")
     order_date: Mapped[date | None] = mapped_column(Date)
@@ -90,7 +90,7 @@ class Order(WarehouseRow, Base):
 
 class OrderItem(WarehouseRow, Base):
     __tablename__ = "order_items"
-    __table_args__ = {"schema": WAREHOUSE_SCHEMA}
+    __table_args__ = (Index("uq_order_items_job_source_key", "job_id", "source_key", unique=True), {"schema": WAREHOUSE_SCHEMA})
 
     order_id: Mapped[uuid.UUID] = _wh_fk("orders")
     product_id: Mapped[uuid.UUID] = _wh_fk("products")
@@ -103,7 +103,7 @@ class OrderItem(WarehouseRow, Base):
 
 class Patient(WarehouseRow, Base):
     __tablename__ = "patients"
-    __table_args__ = {"schema": WAREHOUSE_SCHEMA}
+    __table_args__ = (Index("uq_patients_job_source_key", "job_id", "source_key", unique=True), {"schema": WAREHOUSE_SCHEMA})
 
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
@@ -120,7 +120,7 @@ class Patient(WarehouseRow, Base):
 
 class Encounter(WarehouseRow, Base):
     __tablename__ = "encounters"
-    __table_args__ = {"schema": WAREHOUSE_SCHEMA}
+    __table_args__ = (Index("uq_encounters_job_source_key", "job_id", "source_key", unique=True), {"schema": WAREHOUSE_SCHEMA})
 
     patient_id: Mapped[uuid.UUID] = _wh_fk("patients")
     start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -132,7 +132,7 @@ class Encounter(WarehouseRow, Base):
 
 class Condition(WarehouseRow, Base):
     __tablename__ = "conditions"
-    __table_args__ = {"schema": WAREHOUSE_SCHEMA}
+    __table_args__ = (Index("uq_conditions_job_source_key", "job_id", "source_key", unique=True), {"schema": WAREHOUSE_SCHEMA})
 
     patient_id: Mapped[uuid.UUID] = _wh_fk("patients")
     encounter_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -146,7 +146,7 @@ class Condition(WarehouseRow, Base):
 
 class Medication(WarehouseRow, Base):
     __tablename__ = "medications"
-    __table_args__ = {"schema": WAREHOUSE_SCHEMA}
+    __table_args__ = (Index("uq_medications_job_source_key", "job_id", "source_key", unique=True), {"schema": WAREHOUSE_SCHEMA})
 
     patient_id: Mapped[uuid.UUID] = _wh_fk("patients")
     encounter_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -162,6 +162,7 @@ class Medication(WarehouseRow, Base):
 class Observation(WarehouseRow, Base):
     __tablename__ = "observations"
     __table_args__ = (
+        Index("uq_observations_job_source_key", "job_id", "source_key", unique=True),
         Index("ix_observations_patient_id_code", "patient_id", "code"),
         {"schema": WAREHOUSE_SCHEMA},
     )

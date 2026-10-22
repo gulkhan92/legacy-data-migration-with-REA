@@ -180,6 +180,12 @@ def approve_mapping(session: Session, mapping: Mapping, user_id: uuid.UUID, *, t
     return memory
 
 
+def reject_mapping(mapping: Mapping, user_id: uuid.UUID) -> None:
+    """A reviewer says this column does not belong to the suggested target. No rule is generated for it."""
+    mapping.status = MappingStatus.REJECTED
+    mapping.reviewed_by, mapping.reviewed_at = user_id, datetime.now(UTC)
+
+
 def approve_decided(session: Session, job: Job, user_id: uuid.UUID) -> int:
     """Approve every mapping the engine settled on (memory, auto, llm) in one go. Returns how many were approved."""
     count = 0
@@ -209,4 +215,4 @@ def mappings_for_job(session: Session, job_id: uuid.UUID) -> list[dict[str, Any]
     ]
 
 
-__all__ = ["run_mapping", "approve_mapping", "approve_decided", "mappings_for_job", "MappingUnavailable", "UNMAPPED", "InvalidTransition"]
+__all__ = ["run_mapping", "approve_mapping", "reject_mapping", "approve_decided", "mappings_for_job", "MappingUnavailable", "UNMAPPED", "InvalidTransition"]

@@ -90,6 +90,7 @@ class ColumnProfile(BaseModel):
     case: CaseStats | None = None
     top_patterns: list[PatternCount] = Field(default_factory=list)
     top_values: list[ValueCount] = Field(default_factory=list)  # never filled for PII columns
+    code_values: list[ValueCount] = Field(default_factory=list)  # every value of a column with at most 50 distinct values, never for PII
     whitespace_share: float = 0.0
     signals: dict[str, float] = Field(default_factory=dict)  # share of values that look like an email, phone, postal code, ...
     key_candidate: bool = False
