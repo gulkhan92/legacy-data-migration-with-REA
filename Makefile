@@ -13,3 +13,8 @@ datasets-quick:
 # Check that the committed fixtures match datasets/checksums.json.
 datasets-verify:
 	$(PYTHON) datasets/scripts/verify_fixtures.py
+
+# Background workers (Phase 9). Needs Redis: docker compose up -d redis
+.PHONY: worker
+worker:
+	cd backend && uv run celery -A app.jobs.celery_app:celery_app worker -Q legacylift --loglevel=INFO --concurrency=2

@@ -77,6 +77,18 @@ class Settings(BaseSettings):
     gemini_tokens_per_minute: int = 250_000
     gemini_requests_per_minute: int = 15
 
+    # Job orchestration (Phase 9). "celery" sends stages to workers through Redis; "eager" runs them inside the
+    # API process (local development without Redis, tests). Eager is refused outside local use.
+    redis_url: str = "redis://localhost:6379/0"
+    jobs_execution: str = "celery"
+    job_task_max_retries: int = 3  # retries of a stage after a transient failure (database or network), with backoff
+    job_task_retry_base_seconds: int = 5
+    job_stage_busy_retries: int = 20  # a second stage for the same job waits for the first one this many times
+    job_task_time_limit_seconds: int = 3600
+    sse_poll_seconds: float = 0.5
+    sse_heartbeat_seconds: float = 15.0
+    sse_max_seconds: int = 300  # a stream ends after this long; the browser reconnects with Last-Event-ID
+
     # Uploads
     upload_dir: str = "./var/uploads"
     upload_max_bytes: int = 50 * 1024 * 1024
@@ -88,6 +100,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _refuse_dev_secrets_outside_dev(self) -> "Settings":
+        if self.jobs_execution not in {"celery", "eager"}:
+            raise ValueError("JOBS_EXECUTION must be celery or eager")
+        if self.environment not in {"local", "test"} and self.jobs_execution == "eager":
+            raise ValueError("JOBS_EXECUTION=eager would run long stages inside the API process; use celery")
         if self.environment not in {"local", "test"}:
             if self.jwt_secret == DEV_JWT_SECRET or self.upload_encryption_key == DEV_ENCRYPTION_KEY:
                 raise ValueError("JWT_SECRET and UPLOAD_ENCRYPTION_KEY must be set outside local use")

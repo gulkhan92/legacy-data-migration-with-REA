@@ -142,3 +142,18 @@ def load_upload(storage_path: str) -> bytes:
     if root not in target.parents:
         raise ValueError("Invalid storage path")
     return decrypt_bytes(target.read_bytes(), context=storage_path)
+
+
+def delete_upload(storage_path: str) -> None:
+    """Remove a stored upload. A file that is already gone is not an error."""
+    root = Path(get_settings().upload_dir).resolve()
+    target = (root / storage_path).resolve()
+    if root not in target.parents:
+        raise ValueError("Invalid storage path")
+    target.unlink(missing_ok=True)
+
+
+def upload_exists(storage_path: str) -> bool:
+    root = Path(get_settings().upload_dir).resolve()
+    target = (root / storage_path).resolve()
+    return root in target.parents and target.is_file()

@@ -86,9 +86,23 @@ organization admins read only their own organization's entries.
 - Mutations (approve, reject, rules, code maps, dry run, load, rollback) need the analyst role; reading rules, reports and quarantine needs any signed in user. Load and rollback are written to the audit log.
 - The raw source row of a quarantined record is kept so it can be fixed, which means it may contain personal data. It is protected by the same row level security and is deleted by a rollback of the job.
 
+## Jobs, workers and the public API
+
+- Task payloads contain ids only (job, organization, user), never data and never keys. A worker opens its sessions scoped to the organization in the payload, so Row Level Security applies exactly as in a request. The broker is trusted: Redis listens on localhost only in the compose file, has no persistence, and must not be exposed.
+- Celery accepts JSON only, no pickle, so a message cannot carry code.
+- A failed stage records the exception class in the job event, not its message, so paths, SQL and source data do not reach users through the event stream.
+- The event stream is authenticated by the same cookie as every other route, is scoped to the caller's organization on every poll, and answers 404 for a job of another organization.
+- User management is admin only, never reveals whether an address has an account, revokes refresh tokens when a user is removed, refuses removing or demoting the last admin, and is audited.
+- Validation errors never include the submitted value, so a mistyped password field is not echoed back or logged by a proxy.
+- The public form and metrics are the only routes without sign in. They read no tenant data, return no revenue figures, need the CSRF header, are rate limited, and the form drops bot submissions silently.
+- The quarantine CSV export neutralises spreadsheet formulas.
+- Sample systems are registered by copying the repository's own fixtures, never from a path chosen by the caller.
+
 ## Known limits
 
 - Access tokens are stateless and remain valid until they expire (15 minutes) after logout.
 - Two simultaneous refreshes with the same cookie (for example two browser tabs) are
   indistinguishable from token theft and end the session.
 - Uploads are encrypted in memory in one piece, which is why the size cap exists.
+- Access tokens of a removed user stay valid until they expire; their refresh tokens are revoked at once.
+- A running job stage cannot be interrupted, only the stages after it.

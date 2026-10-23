@@ -26,6 +26,7 @@ from app.profiling.readers import DEFAULT_CHUNK, TableSource
 from app.transform import dry_run as dry
 from app.transform import load, reconcile, rules
 from app.transform.dsl import RuleError, apply_steps, parse_steps
+from app.transform.engine import to_text
 from app.transform.load import StageAggregates
 from app.transform.plan import Plan, build_plan, warehouse_table
 
@@ -118,6 +119,34 @@ def validate_rule_on_sample(session: Session, job: Job, rule: TransformRule, sam
         out = apply_steps(parsed, [chunk[c] for c in rule.inputs])
     present = max(1, int(out.values.notna().sum() + out.failed.sum()))
     return float(out.failed.sum()) / present
+
+
+def preview_rule(session: Session, job: Job, rule: TransformRule, steps: list[dict[str, Any]] | None = None, rows: int = 10) -> dict[str, Any]:
+    """What a rule (the saved one, or steps a person is trying out) does to a sample of the source. Nothing is saved."""
+    candidate = rule.steps if steps is None else steps
+    try:
+        parsed = parse_steps(candidate, len(rule.inputs))
+    except RuleError as exc:
+        raise rules.RuleRejected(str(exc)) from None
+    if any(i.startswith("@") for i in rule.inputs):
+        raise TransformUnavailable("A derived rule reads the output of other rules; its effect shows in the dry run")
+    with ExitStack() as stack:
+        source = _sources(session, job, stack).get(rule.source_table or "")
+        if source is None:
+            raise TransformUnavailable(f"The source table {rule.source_table} is not available")
+        sample = next(iter(source.chunks(dry.SAMPLE_ROWS)), None)
+        if sample is None or sample.empty:
+            return {"sampled": 0, "failed": 0, "failure_rate": 0.0, "steps": [], "rows": []}
+        out = apply_steps(parsed, [sample[c] for c in rule.inputs])
+    failed = [bool(f) for f in out.failed.tolist()]
+    positions = list(range(len(sample)))
+    chosen = [i for i in positions if not failed[i]][:rows] + [i for i in positions if failed[i]][:rows]
+    items = [
+        {"row": int(sample.index[i]), "before": {c: dry._json(sample[c].iloc[i]) for c in rule.inputs}, "after": to_text(out.values.iloc[i]), "failed": failed[i], "kind": out.kind.iloc[i]}
+        for i in chosen
+    ]
+    present = max(1, int(out.values.notna().sum()) + sum(failed))
+    return {"sampled": len(sample), "failed": sum(failed), "failure_rate": round(sum(failed) / present, 4), "steps": [step.spec.name for step in parsed], "rows": items}
 
 
 def update_rule(session: Session, job: Job, rule: TransformRule, steps: list[dict[str, Any]]) -> TransformRule:

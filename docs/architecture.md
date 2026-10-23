@@ -521,3 +521,67 @@ Every injected defect on a mapped column is found with the expected reason: all 
 - A defect on a source column that has no target field (for example patient healthcare expenses) is not seen, because the column is not loaded.
 - Quarantine includes children of quarantined parents (`orphan_fk`), which is intended but makes the quarantine larger than the number of injected defects.
 - The mapping engine can still pair a column wrongly (commerce `comp_nm` with `products.name`); a reviewer rejects or overrides it with `POST .../mappings/{id}/reject` or `/approve`.
+
+## Job orchestration and API (Phase 9)
+
+Every step of a migration can run in the background, report progress while it does, and be repeated safely. The synchronous endpoints of the earlier phases still work; the endpoints below are what a UI uses.
+
+### Stages and workers (`app/jobs/`)
+
+A job moves through six stages: `discover`, `profile`, `map`, `rules` (approve what the engine settled, generate the rules), `dry_run` and `load`. `POST /jobs/{id}/run` queues everything up to the review of the rules (`discover, profile, map, rules`) or the stages named in the request; `POST /jobs/{id}/stages/{stage}` queues one. Both answer `202` with the task id. The stages of one request are a Celery chain, so a later stage starts only when the earlier one returned.
+
+Workers are Celery workers with Redis as the broker (`docker compose --profile app up`, or `celery -A app.jobs.celery_app:celery_app worker -Q legacylift`). Results are not stored: the state of a job lives in `jobs` and `job_events`. Settings: `REDIS_URL`, `JOBS_EXECUTION` (`celery`, or `eager` to run stages inside the API process for local work and tests; refused outside local use), retries, time limits.
+
+`stages.run_stage` knows nothing about Celery, which keeps the rules testable without a broker. It guarantees:
+
+- **Idempotent**. A stage whose work is already behind the job (profile on a mapped job) is skipped and says why, so a redelivered or doubled task does nothing. A load of a completed job is skipped, and the warehouse also refuses a second load by a unique index.
+- **One stage per job at a time**. A PostgreSQL advisory lock, held on its own connection for the length of the stage, keeps two workers from touching the same job. The second task retries a few times and then gives up without failing the job.
+- **Blocked is not failed**. A stage that needs a person (no target schema, a rule that needs a code map, a dry run that finds blocking problems) ends as `blocked`, the job stays where it is, and the reason is in an event.
+- **Transient failures are retried**. A database or network error rolls the stage back and the task retries with exponential backoff (5 s, 10 s, 20 s, up to 3 retries). Only when the retries run out is the job marked FAILED.
+- **Other failures fail the job once**. The stage is rolled back, the job goes to FAILED, and the event names the stage and the exception class, never the message (which may hold paths or data).
+- **Acknowledged late**. A worker that dies mid-stage hands its task to another one; because of the points above that is safe.
+
+### Events and progress
+
+Every state change writes a `job_events` row (the state machine does it). A stage also writes progress notes (`Stage profile started`, `Stage profile finished`, `Stage rules is waiting: ...`) with the same from and to state, in their own transactions so they are visible while the stage runs. `GET /jobs/{id}/events?after=` lists them with a cursor.
+
+`GET /jobs/{id}/events/stream` is a Server-Sent Events stream: it replays the history (or what came after `Last-Event-ID` or `?after=`), then polls for new events every half second, sends a keep-alive comment every 15 s, sends an `end` event when the job reaches a final state, and closes by itself after five minutes with a `timeout` event so that a browser `EventSource` reconnects and resumes. The state is read before the events, so when it is final every event up to it has been sent. Each poll is a short tenant scoped transaction, so a stream never holds a connection while it waits.
+
+### Cancel
+
+`POST /jobs/{id}/cancel` marks a job that is not finished as FAILED with the message "Cancelled by a user"; stages that have not started skip it, and it can still be rolled back. A stage that is running holds the job row, is not interrupted, and the call answers `409` ("cancel again when it has finished") instead of waiting.
+
+### The REST surface
+
+All routes are under `/api/v1`, documented at `/docs` and `/openapi.json`, and classified by role in `tests/test_api_surface.py`, which fails when a route is added without a classification.
+
+| Area | Routes |
+| --- | --- |
+| auth | `login`, `refresh`, `logout`, `me` |
+| sources | list, get, upload, delete, `samples` (list the bundled systems) and `samples/{name}` (register one; registering twice returns the same sources) |
+| jobs | create, list (filter by status and source), get (with `next_stage`), `run`, `stages/{stage}`, `cancel`, `events`, `events/stream`; `rollback` (synchronous) |
+| mappings | list, `PATCH` (change target or hint; `null` rejects), approve, reject, `approve-decided`, `bulk-approve` |
+| transforms | rules list, update, code map, `transforms/preview` (try steps on a sample, nothing saved) |
+| reports | `reconciliation`, `quarantine` (paginated, filtered), `quarantine.csv` |
+| schemas | target schemas and their fields |
+| admin | users (list, create, change role, remove), audit log, leads, LLM settings and usage |
+| public | `metrics` (aggregates of the daily snapshot, no revenue) and `leads` (the contact form) |
+
+Conventions. List endpoints that are new return `{items, total, limit, offset}` with `limit` at most 200; the older list endpoints keep returning bare arrays. Errors always look like `{"detail": ..., "error": {"code", "message", "status", "fields"?}}`: `detail` is what FastAPI sends, `error.code` is stable (`not_found`, `forbidden`, `conflict`, `validation_error`, ...), and validation errors list the offending fields without echoing what was submitted. State changes need the `X-Requested-With: LegacyLift` header, including the public form.
+
+### Details worth knowing
+
+- **Samples**. The bundled systems (commerce, ClinicDesk) are registered as sources of the organization, encrypted like an upload and marked `is_sample`. They exist only where the repository's `datasets/fixtures` are installed; the list says which are available.
+- **Deleting a source** is refused while a job uses it, removes the encrypted file, and is audited.
+- **Users**. Creating a user sets a first password that must pass the password policy; an address that already has an account anywhere gets the same refusal, so the endpoint cannot be used to find out who has one. Removing a user deletes the membership and revokes that user's refresh tokens for this organization; the account stays because it may belong to others. The last admin and yourself cannot be removed or demoted.
+- **Leads**. The form accepts a contact or demo request, drops submissions that fill the hidden `website` field without telling the sender, and is limited to five per minute per address.
+- **Quarantine export** streams from its own short session and writes cells that start with `=`, `+`, `-`, `@`, tab or carriage return with a leading quote, so an exported file cannot run a formula when opened in a spreadsheet.
+- **Mapping edits** are accepted while a job is MAPPED or AWAITING_REVIEW; in the second state the rules must be generated again (the response says so).
+
+### Limits
+
+- Access tokens stay valid for up to 15 minutes after a user is removed (they are stateless); refresh stops at once.
+- A running stage cannot be interrupted; cancel works between stages.
+- Task payloads carry the organization and user ids and are trusted: whoever can write to the broker can run stages for any organization, so Redis must not be reachable from outside (the compose file binds it to localhost and sets no external port).
+- The SSE stream polls the database. That is simple and robust through proxies, and costs one small query per open stream every half second; a pub/sub channel would replace it at much larger scale.
+- The public metrics come from the platform wide daily snapshot, which Phase 11 fills with simulated organizations; until then they are zeros.

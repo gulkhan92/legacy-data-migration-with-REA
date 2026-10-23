@@ -217,6 +217,7 @@ def client(app_engine: Engine, api_users: ApiUsers, tmp_path, monkeypatch) -> It
     monkeypatch.setattr(session_module, "get_engine", lambda: app_engine)
     settings = get_settings()
     monkeypatch.setattr(settings, "upload_dir", str(tmp_path / "uploads"))
+    monkeypatch.setattr(settings, "jobs_execution", "eager")  # stages run inside the request, no broker needed
     limiter.enabled = False
     limiter.reset()
     with TestClient(create_app(), base_url="https://testserver", headers=CSRF) as test_client:

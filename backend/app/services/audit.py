@@ -24,6 +24,14 @@ class AuditAction:
     JOB_LOAD = "job.load"
     JOB_ROLLBACK = "job.rollback"
     SETTINGS_CHANGE = "settings.change"
+    JOB_CREATE = "job.create"
+    JOB_RUN = "job.run"
+    JOB_CANCEL = "job.cancel"
+    SOURCE_DELETE = "source.delete"
+    SAMPLE_REGISTER = "source.sample"
+    USER_CREATE = "user.create"
+    USER_ROLE_CHANGE = "user.role_change"
+    USER_REMOVE = "user.remove"
 
 
 def _clean_ip(value: str | None) -> str | None:

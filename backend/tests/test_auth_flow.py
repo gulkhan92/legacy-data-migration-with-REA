@@ -42,7 +42,8 @@ def test_unknown_user_and_wrong_password_are_indistinguishable(client) -> None: 
     wrong = login_as(client, "viewer@acme.test", "Wrong-Password-123")
     unknown = login_as(client, "nobody@acme.test", PASSWORD)
     assert wrong.status_code == unknown.status_code == 401
-    assert wrong.json() == unknown.json() == {"detail": "Invalid credentials"}
+    assert wrong.json() == unknown.json()
+    assert wrong.json()["detail"] == "Invalid credentials" and wrong.json()["error"]["code"] == "not_authenticated"
 
 
 def test_email_is_case_insensitive(client) -> None:  # type: ignore[no-untyped-def]

@@ -1,5 +1,5 @@
-# Phase 1 scope: the database only. The remaining services (api, worker, redis,
-# rea-runner, frontend) are added in Phase 0 and later phases.
+# Services: db and redis always; the api and the worker with `docker compose --profile app up`; the REA runner with
+# `--profile rea`. The frontend is added in a later phase.
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -16,6 +16,49 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:${REDIS_HOST_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment: &app_env
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      DATABASE_URL: postgresql+psycopg://${APP_DB_USER:-legacylift_app}:${APP_DB_PASSWORD:-change-me-app}@db:5432/${POSTGRES_DB:-legacylift}
+      REDIS_URL: redis://redis:6379/0
+      JOBS_EXECUTION: celery
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  worker:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["celery", "-A", "app.jobs.celery_app:celery_app", "worker", "-Q", "legacylift", "--loglevel=INFO", "--concurrency=2"]
+    environment: *app_env
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
 
   # Static analysis sandbox for uploaded software. Started on demand: docker compose --profile rea up
   rea-runner:
@@ -39,4 +82,5 @@ services:
 
 volumes:
   db_data:
+  uploads:
   uploads_decrypted:
