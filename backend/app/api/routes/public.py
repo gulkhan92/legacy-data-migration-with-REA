@@ -8,10 +8,11 @@ import re
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, select
 
+from app.billing import plans
 from app.core.rate_limit import limiter
 from app.db.models import DailyMetric, Lead
 from app.db.session import make_session_factory, scoped_session
@@ -86,3 +87,31 @@ def create_lead(request: Request, body: LeadIn) -> LeadAccepted:
     with scoped_session(factory=make_session_factory()) as db:
         db.add(Lead(name=body.name, email=body.email, company=body.company, message=body.message, kind=body.kind))
     return LeadAccepted()
+
+
+class PublicPlan(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"code": "professional", "name": "Professional", "monthly_fee_cents": 49900, "included_records": 2000000, "overage_cents_per_1000": 20.0}]})
+
+    code: str
+    name: str
+    monthly_fee_cents: int
+    included_records: int
+    overage_cents_per_1000: float
+
+
+@router.get("/plans", response_model=list[PublicPlan], summary="The illustrative plans, cheapest first")
+def public_plans(response: Response) -> list[PublicPlan]:
+    response.headers["Cache-Control"] = "public, max-age=300"
+    with scoped_session(factory=make_session_factory()) as db:
+        catalogue = plans.load_plans(db)
+    return [PublicPlan(code=t.code, name=t.name, monthly_fee_cents=t.monthly_fee_cents, included_records=t.included_records, overage_cents_per_1000=float(t.overage_cents_per_1000)) for t in catalogue.values()]
+
+
+@router.get("/pricing/estimate", summary="What a month with this many records costs on a plan")
+def pricing_estimate(plan: str = Query(..., min_length=1, max_length=50), records: int = Query(..., ge=0, le=10_000_000_000)) -> dict[str, int | str]:
+    with scoped_session(factory=make_session_factory()) as db:
+        catalogue = plans.load_plans(db)
+    terms = catalogue.get(plan)
+    if terms is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown plan")
+    return {"plan": terms.code, "currency": "USD", **plans.estimate(terms, records)}

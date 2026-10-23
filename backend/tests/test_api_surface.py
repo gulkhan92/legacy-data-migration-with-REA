@@ -43,6 +43,13 @@ SURFACE: dict[tuple[str, str], str] = {
     ("PUT", "/api/v1/jobs/{job_id}/rules/{rule_id}/code-map"): ANALYST, ("POST", "/api/v1/jobs/{job_id}/transforms/preview"): ANALYST,
     ("POST", "/api/v1/jobs/{job_id}/dry-run"): ANALYST, ("POST", "/api/v1/jobs/{job_id}/load"): ANALYST, ("POST", "/api/v1/jobs/{job_id}/rollback"): ANALYST,
     ("GET", "/api/v1/jobs/{job_id}/reconciliation"): ANY, ("GET", "/api/v1/jobs/{job_id}/quarantine"): ANY, ("GET", "/api/v1/jobs/{job_id}/quarantine.csv"): ANY,
+    # billing of the caller's organization, public pricing, analytics
+    ("GET", "/api/v1/billing/subscription"): ANY, ("GET", "/api/v1/billing/usage"): ANY, ("POST", "/api/v1/billing/subscription/plan"): ADMIN,
+    ("GET", "/api/v1/billing/invoices"): ADMIN, ("GET", "/api/v1/billing/invoices/{invoice_id}"): ADMIN, ("PATCH", "/api/v1/billing/invoices/{invoice_id}"): ADMIN,
+    ("GET", "/api/v1/public/plans"): PUBLIC, ("GET", "/api/v1/public/pricing/estimate"): PUBLIC,
+    ("GET", "/api/v1/analytics/revenue"): ADMIN, ("GET", "/api/v1/analytics/revenue.csv"): ADMIN, ("GET", "/api/v1/analytics/revenue/breakdown"): ADMIN,
+    ("GET", "/api/v1/analytics/customers/top"): ADMIN, ("GET", "/api/v1/analytics/invoices"): ADMIN, ("GET", "/api/v1/analytics/invoices.csv"): ADMIN,
+    ("GET", "/api/v1/analytics/operations"): ANALYST, ("GET", "/api/v1/analytics/operations.csv"): ANALYST,
     # admin
     ("GET", "/api/v1/admin/audit-log"): ADMIN, ("GET", "/api/v1/admin/leads"): ADMIN, ("GET", "/api/v1/admin/users"): ADMIN, ("POST", "/api/v1/admin/users"): ADMIN,
     ("PATCH", "/api/v1/admin/users/{user_id}"): ADMIN, ("DELETE", "/api/v1/admin/users/{user_id}"): ADMIN,
@@ -69,7 +76,7 @@ def test_the_surface_lists_exactly_the_routes_of_the_app() -> None:
     actual = actual_routes()
     assert actual - set(SURFACE) == set(), "classify these new routes in SURFACE"
     assert set(SURFACE) - actual == set(), "these routes no longer exist"
-    assert len(SURFACE) >= 55
+    assert len(SURFACE) >= 74
 
 
 @pytest.mark.parametrize("method,template", sorted((m, p) for (m, p), need in SURFACE.items() if need != PUBLIC))

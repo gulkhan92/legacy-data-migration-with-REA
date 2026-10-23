@@ -32,6 +32,8 @@ class AuditAction:
     USER_CREATE = "user.create"
     USER_ROLE_CHANGE = "user.role_change"
     USER_REMOVE = "user.remove"
+    PLAN_CHANGE = "billing.plan_change"
+    INVOICE_STATUS = "billing.invoice_status"
 
 
 def _clean_ip(value: str | None) -> str | None:

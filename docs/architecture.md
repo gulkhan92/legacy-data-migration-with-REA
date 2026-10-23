@@ -585,3 +585,75 @@ Conventions. List endpoints that are new return `{items, total, limit, offset}` 
 - Task payloads carry the organization and user ids and are trusted: whoever can write to the broker can run stages for any organization, so Redis must not be reachable from outside (the compose file binds it to localhost and sets no external port).
 - The SSE stream polls the database. That is simple and robust through proxies, and costs one small query per open stream every half second; a pub/sub channel would replace it at much larger scale.
 - The public metrics come from the platform wide daily snapshot, which Phase 11 fills with simulated organizations; until then they are zeros.
+
+## Billing, metrics and analytics (Phase 10)
+
+There are no real customers, so the revenue figures are simulated. The logic behind them is not: every number is computed from tables, and every migration that completes in the application writes real usage that flows into the next invoice and the next metrics snapshot. Rows created for the demonstration carry `is_simulated = true`, every analytics answer says whether it includes any, and the footnote "Revenue figures are simulated for demonstration" travels with them.
+
+### Plans (illustrative)
+
+| Plan | Base fee | Included records / month | Overage |
+| --- | --- | --- | --- |
+| Starter | free | 100,000 | $0.50 per 1,000 records |
+| Professional | $499 | 2,000,000 | $0.20 per 1,000 records |
+| Enterprise | $2,500 | 25,000,000 | $0.08 per 1,000 records |
+
+The Starter overage rate is not in the plan text; it is an assumption so that a free account cannot load without limit. The plans are rows in `plans` (inserted by the migration), served at `GET /public/plans`, and priced by one function (`app/billing/plans.py`): overage = (records above the allowance / 1,000) x rate, rounded half up to whole cents once per invoice line. `GET /public/pricing/estimate` is the same function for the pricing page calculator.
+
+### Metering
+
+A completed load writes one `usage_events` row (records loaded, tokens used by the job, processing time of the load) in the same transaction as the job's completion. A unique index on `job_id` makes it once per job however often it is attempted. An organization that has no subscription gets the free Starter plan from its first usage. A rolled back load removes its usage event, unless the month it belongs to has already been invoiced (then the invoice stands).
+
+### Invoices
+
+`python -m app.billing.cli invoices --month 2026-09` (and the `monthly_invoices` Celery beat task on the first of every month) invoices the month that has ended. A subscription is billed for a month when it is **active on the month's last day**: a base line with the fee of that plan, and an overage line for the records loaded during the month. Billing on the month end state is what makes the books balance: the base lines of a month add up to the MRR of its last day. One invoice per subscription and period is enforced by a unique index, so a second run changes nothing; a bill of zero (a free plan with no overage) is not issued; one organization failing does not stop the others. Statuses are `open` at issue, `overdue` when the due date (30 days) has passed (marked by the same run), `paid` or `void` when an admin says so (`PATCH /billing/invoices/{id}`). There is no payment processor.
+
+### The snapshot
+
+Every night the `nightly_snapshot` beat task (or `python -m app.billing.cli snapshot`) writes one `daily_metrics` row for yesterday and refreshes today's. The row is computed inside the database by `platform_day_metrics(date)`, a function that aggregates over all organizations (see Cross organization reads below). Running a day again replaces its row, which is how the invoice run keeps revenue current: it re-takes the snapshot of the period's last day after issuing the invoices.
+
+### Metric definitions
+
+- **MRR** is the sum of the base fees of the subscriptions that are active at the end of the day. Usage revenue is tracked separately and is not in MRR.
+- **New MRR**: the fee of an organization that had no subscription the day before. **Expansion**: the increase of an organization that keeps a subscription (Starter to a paid plan counts). **Contraction**: a decrease. **Churned MRR**: the fee of a subscription that ended without a successor.
+- **Net new MRR = new + expansion - contraction - churned.** The MRR at the end of a period is the MRR at its start plus net new MRR; every revenue report returns `checks.mrr_movements_add_up`.
+- **Gross churn rate** = churned MRR of the period / MRR at the start of the period (null when the start MRR is zero).
+- **Net revenue retention (trailing 12 months)** = the MRR today of the organizations that paid something twelve months ago / what those organizations paid then. It includes their expansion and contraction and excludes organizations that joined since. Null when nobody paid a year earlier.
+- **ARPA** = MRR / paying accounts (accounts with a fee above zero) at the end of the period. **ARR** = 12 x MRR.
+- **Subscription revenue** and **usage revenue** are the base and overage lines of invoices that are not void, recognised on the last day of the period they bill. For any range their sum equals the invoice totals of that range; `checks.revenue_matches_invoices` compares them on every request, `checks.complete` says whether every day of the range has a snapshot.
+- **Success rate** = completed jobs / finished jobs of the day; **average duration** and **quality score** are daily averages over the usage events and reconciliation reports. Over a range they are averaged over the days, weighted by the jobs of each day.
+- **Tokens by provider** count non-cached successful calls (input plus output). **Failovers** count provider calls that were rate limited, timed out or failed. **Cache hits** count answers served from the cache.
+
+In a bucket (day, week, month) stocks (MRR, accounts, retention) take the value on the bucket's last day, flows are summed, ratios are weighted by jobs. Weeks start on Monday.
+
+### The simulated history
+
+`python -m app.billing.cli history --reset` (or `uv run --project backend python scripts/seed_billing_history.py`) writes 24 months of history (seed 42, deterministic, about 15 seconds): 140 fictional organizations across five industries and four regions, an S curve of signups, a plan mix that depends on the industry, monthly churn (about 4% on Starter, 2% on Professional, 0.7% on Enterprise, higher for accounts that barely use the product), expansion when usage stays above the allowance and some contraction when a large plan is barely used, Q4 seasonality (usage up about 25% in October to December, down in winter), about 6,400 jobs with plausible sizes, durations, token use (60% of runs use none), provider failovers, failures and quality, then invoices produced by the real invoice code and payments (most on time, some late, a few never, a few voided). Every number is a consequence of those rows, so the totals reconcile by construction and the tests check that they do.
+
+### Analytics endpoints
+
+All under `/api/v1/analytics`, with `from`, `to` (default: the last 90 days of data), `granularity` (`day`, `week`, `month`) and, on the series endpoints, `compare=true` for the previous period of the same length and the change. A range is limited to 800 days. Answers are cached for 60 seconds (Redis; `CACHE_BACKEND=memory` for local work, `off` to disable). If Redis is down the answer is computed without it.
+
+| Endpoint | Who | Content |
+| --- | --- | --- |
+| `GET /revenue` | admin | series, KPIs, previous period, change, reconciliation checks |
+| `GET /revenue/breakdown?dimension=plan\|industry\|region` | admin | MRR (stock) and usage revenue (flow) by key and bucket, and the current split |
+| `GET /customers/top` | admin | the customers with the most revenue in 12 months, with a 12 month trend |
+| `GET /invoices` | admin | invoices of all customers, filtered (status, customer, period) and paginated |
+| `GET /operations` | analyst, admin | jobs, success rate, duration, records, tokens by provider, failovers, cache hits, quality |
+| `GET /revenue.csv`, `/operations.csv`, `/invoices.csv` | as above | the same data as CSV, text cells that start with a formula character are quoted |
+
+An organization's own billing is under `/api/v1/billing`: the plan with this month's usage meter and projection and the usage events (any signed in user), the invoice list and printable detail, marking an invoice paid or void, and changing the plan (admin).
+
+### Cross organization reads
+
+Revenue spans organizations and Row Level Security rightly keeps one organization from reading another's rows. The platform wide numbers therefore come from `SECURITY DEFINER` functions owned by the migration role (`platform_day_metrics`, `platform_top_customers`, `platform_invoice_page`, `platform_revenue_totals`, `platform_billable_orgs`, `platform_mark_overdue`, and an internal `platform_org_state`). They return aggregates and per customer rows in which only simulated organizations carry their name (a live organization appears as "Live organization 3f9a1c"). EXECUTE is revoked from PUBLIC and granted to the application role, except for the internal function, which the application cannot call. The migration role must bypass Row Level Security (a superuser does, which is the default of the Postgres image); the tests check that the functions see every organization while ordinary queries do not.
+
+### Limits
+
+- The current month's revenue is zero until its invoices are issued; MRR is live.
+- A plan change takes effect at once and is not prorated; the month is billed on the plan active on its last day.
+- A day's operational numbers are final only after the day has ended; today's snapshot is a running figure.
+- Dollar amounts are USD cents; there is no tax, currency conversion or credit note.
+- Revenue and customer rows are readable by any organization's admin, since there is no platform operator role yet; this is why live customers are masked.
+- The nightly and monthly jobs need `celery beat` running (exactly one instance).

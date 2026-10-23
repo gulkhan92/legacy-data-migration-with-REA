@@ -45,7 +45,7 @@ def test_every_api_route_is_guarded() -> None:
     """Fails when a new route is added without an authentication or role dependency."""
     from app.main import create_app
 
-    public = {"/health", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout", "/api/v1/public/metrics", "/api/v1/public/leads"}
+    public = {"/health", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout", "/api/v1/public/metrics", "/api/v1/public/leads", "/api/v1/public/plans", "/api/v1/public/pricing/estimate"}
 
     def deps(dependant):  # type: ignore[no-untyped-def]
         for sub in dependant.dependencies:

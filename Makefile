@@ -18,3 +18,8 @@ datasets-verify:
 .PHONY: worker
 worker:
 	cd backend && uv run celery -A app.jobs.celery_app:celery_app worker -Q legacylift --loglevel=INFO --concurrency=2
+
+# Billing (Phase 10). Two years of simulated customers, usage, invoices and metrics (deterministic, seed 42).
+.PHONY: seed-billing
+seed-billing:
+	cd backend && uv run python -m app.billing.cli history --reset

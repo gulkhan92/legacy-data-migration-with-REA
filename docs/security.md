@@ -98,6 +98,16 @@ organization admins read only their own organization's entries.
 - The quarantine CSV export neutralises spreadsheet formulas.
 - Sample systems are registered by copying the repository's own fixtures, never from a path chosen by the caller.
 
+## Billing and analytics
+
+- Platform wide figures are read through `SECURITY DEFINER` functions, not by loosening Row Level Security. Each function returns aggregates or a bounded, masked list; EXECUTE is revoked from PUBLIC and granted to the application role only; the function that returns a row per organization is internal and not callable by the application. A search path is fixed on every function so a caller cannot shadow what it uses.
+- Customer names in revenue views are masked for live organizations. A live organization is never identified to another organization's admin by name, domain or id (the label is derived from a hash).
+- Revenue, customers and invoices of all organizations are readable by an organization admin, because the application has no platform operator role yet. This is a known gap for a real deployment and is why the masking exists; a real deployment should add that role and restrict these endpoints to it.
+- An organization's invoices and plan are readable and changeable only by its admin, isolated by Row Level Security. Changing an invoice's status and changing a plan are audited.
+- Analytics answers are cached without any user data in the key or the value; the cache holds only platform aggregates. Redis is optional and its failure never blocks or changes an answer.
+- CSV exports neutralise spreadsheet formulas in text cells and are served as attachments with `nosniff`.
+- The simulated history is written only by an operator command with the table owner's credentials; there is no HTTP route that creates organizations, invoices or snapshots.
+
 ## Known limits
 
 - Access tokens are stateless and remain valid until they expire (15 minutes) after logout.
@@ -106,3 +116,4 @@ organization admins read only their own organization's entries.
 - Uploads are encrypted in memory in one piece, which is why the size cap exists.
 - Access tokens of a removed user stay valid until they expire; their refresh tokens are revoked at once.
 - A running job stage cannot be interrupted, only the stages after it.
+- Revenue views are open to any organization admin (with live customers masked) until a platform operator role exists.

@@ -169,20 +169,26 @@ def test_removing_a_user_ends_their_sessions(client, api_users) -> None:  # type
 def test_public_metrics_are_aggregates_and_cacheable(client, admin_engine) -> None:  # type: ignore[no-untyped-def]
     empty = client.get("/api/v1/public/metrics")
     assert empty.status_code == 200 and empty.headers["cache-control"] == "public, max-age=300"
-    with Session(admin_engine) as session:
-        session.execute(text("DELETE FROM daily_metrics"))
-        session.add_all([
-            models.DailyMetric(metric_date=date(2026, 10, 20), active_orgs=10, jobs=100, records=1_000_000, success_rate=0.9, quality_score=95, avg_duration_ms=40_000, mrr_cents=12345),
-            models.DailyMetric(metric_date=date(2026, 10, 21), active_orgs=12, jobs=50, records=500_000, success_rate=1.0, quality_score=97, avg_duration_ms=20_000, mrr_cents=99999),
-        ])
-        session.commit()
-    body = client.get("/api/v1/public/metrics").json()
-    assert body == {"demo": True, "as_of": "2026-10-21", "days": 2, "organizations": 12, "jobs_run": 150, "records_migrated": 1_500_000, "success_rate": 0.95,
-                    "average_quality_score": 96.0, "average_duration_seconds": 30.0}  # fmt: skip
-    assert "mrr" not in str(body).lower()  # revenue stays private
-    with Session(admin_engine) as session:
-        session.execute(text("DELETE FROM daily_metrics"))
-        session.commit()
+    with admin_engine.begin() as connection:  # keep what other tests may have written (the billing history) and put it back afterwards
+        connection.execute(text("DROP TABLE IF EXISTS daily_metrics_backup"))
+        connection.execute(text("CREATE TABLE daily_metrics_backup AS TABLE daily_metrics"))
+        connection.execute(text("DELETE FROM daily_metrics"))
+    try:
+        with Session(admin_engine) as session:
+            session.add_all([
+                models.DailyMetric(metric_date=date(2026, 10, 20), active_orgs=10, jobs=100, records=1_000_000, success_rate=0.9, quality_score=95, avg_duration_ms=40_000, mrr_cents=12345),
+                models.DailyMetric(metric_date=date(2026, 10, 21), active_orgs=12, jobs=50, records=500_000, success_rate=1.0, quality_score=97, avg_duration_ms=20_000, mrr_cents=99999),
+            ])
+            session.commit()
+        body = client.get("/api/v1/public/metrics").json()
+        assert body == {"demo": True, "as_of": "2026-10-21", "days": 2, "organizations": 12, "jobs_run": 150, "records_migrated": 1_500_000, "success_rate": 0.95,
+                        "average_quality_score": 96.0, "average_duration_seconds": 30.0}  # fmt: skip
+        assert "mrr" not in str(body).lower()  # revenue stays private
+    finally:
+        with admin_engine.begin() as connection:
+            connection.execute(text("DELETE FROM daily_metrics"))
+            connection.execute(text("INSERT INTO daily_metrics SELECT * FROM daily_metrics_backup"))
+            connection.execute(text("DROP TABLE daily_metrics_backup"))
 
 
 def test_leads_are_stored_and_only_admins_read_them(client, api_users) -> None:  # type: ignore[no-untyped-def]

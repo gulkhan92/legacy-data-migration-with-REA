@@ -16,6 +16,7 @@ from typing import Any
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import Session
 
+from app.billing import metering
 from app.db.job_state import InvalidTransition
 from app.db.models import Job, QuarantinedRow, ReconciliationReport, Source, TransformRule
 from app.db.models.enums import JobStatus
@@ -258,6 +259,7 @@ def load_job(session: Session, job: Job, *, chunk_size: int = DEFAULT_CHUNK) -> 
     seconds = round(time.perf_counter() - started, 2)
     _store_report(session, job, report, loaded, quarantined, True, quality_before, report["quality"]["after"])
     _move(jobs, job, JobStatus.COMPLETED, "Load and reconciliation finished", {"loaded": loaded, "quarantined": quarantined, "seconds": seconds})
+    metering.record_job_usage(session, job, loaded, int(seconds * 1000))
     return LoadOutcome(job.id, report["tables"], loaded, quarantined, True, quality_before, report["quality"]["after"], seconds, report)
 
 
@@ -288,6 +290,7 @@ def rollback_job(session: Session, job: Job) -> dict[str, Any]:
     removed = WarehouseRepository(session).delete_by_job(job.id)
     quarantined = session.execute(delete(QuarantinedRow).where(QuarantinedRow.job_id == job.id)).rowcount or 0
     session.execute(delete(ReconciliationReport).where(ReconciliationReport.job_id == job.id))
+    metering.void_job_usage(session, job)
     _move(JobRepository(session), job, JobStatus.ROLLED_BACK, "Rolled back by job id", {"removed": removed, "quarantined_removed": quarantined})
     return {"removed": removed, "quarantined_removed": int(quarantined)}
 

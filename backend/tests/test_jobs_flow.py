@@ -34,7 +34,7 @@ def get_status(client, job: str) -> str:  # type: ignore[no-untyped-def]
 
 
 @requires_rea
-def test_a_full_job_runs_from_api_calls_only(client, seeded) -> None:  # type: ignore[no-untyped-def]
+def test_a_full_job_runs_from_api_calls_only(client, seeded, admin_engine) -> None:  # type: ignore[no-untyped-def]
     assert login_as(client, "analyst@acme.test").status_code == 200
 
     sample = client.post("/api/v1/sources/samples/commerce").json()
@@ -101,6 +101,17 @@ def test_a_full_job_runs_from_api_calls_only(client, seeded) -> None:  # type: i
     report = client.get(f"/api/v1/jobs/{job}/reconciliation").json()
     assert report["passed"] is True and report["loaded_rows"] + report["quarantined_rows"] == report["source_rows"] == 6338
 
+    # the load was metered: one usage event for the job, on a plan, and the day's metrics count its records
+    usage = client.get("/api/v1/billing/usage").json()
+    [event] = [e for e in usage["items"] if e["job_id"] == job]
+    assert event["records_loaded"] == report["loaded_rows"] > 0
+    assert client.get("/api/v1/billing/subscription").json()["usage"]["records"] >= report["loaded_rows"]
+    from sqlalchemy import text
+
+    with admin_engine.connect() as connection:
+        today = connection.execute(text("SELECT platform_day_metrics(CURRENT_DATE)")).scalar_one()
+    assert today["records"] >= report["loaded_rows"] and today["active_orgs"] >= 1
+
     # quarantine export
     exported = client.get(f"/api/v1/jobs/{job}/quarantine.csv")
     assert exported.status_code == 200 and exported.headers["content-type"].startswith("text/csv")
@@ -122,6 +133,7 @@ def test_a_full_job_runs_from_api_calls_only(client, seeded) -> None:  # type: i
     rolled = client.post(f"/api/v1/jobs/{job}/rollback")
     assert rolled.status_code == 200 and get_status(client, job) == "ROLLED_BACK"
     assert sum(rolled.json()["removed"].values()) == report["loaded_rows"]
+    assert job not in [e["job_id"] for e in client.get("/api/v1/billing/usage").json()["items"]]  # a rolled back load is not billed
 
 
 @pytest.mark.parametrize("value,expected", [("=1+1", "'=1+1"), ("+cmd", "'+cmd"), ("-2", "'-2"), ("@SUM(A1)", "'@SUM(A1)"), ("\tx", "'\tx"), ("plain", "plain"), (None, ""), (12, "12")])

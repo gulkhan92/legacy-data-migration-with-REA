@@ -5,7 +5,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.errors import install_error_handlers
-from app.api.routes import admin, admin_llm, auth, discovery, jobs, mapping, profiling, public, sources, transform
+from app.api.routes import admin, admin_llm, analytics, auth, billing, discovery, jobs, mapping, profiling, public, sources, transform
 from app.core.config import get_settings
 from app.core.middleware import CsrfMiddleware, SecurityHeadersMiddleware
 from app.core.rate_limit import limiter
@@ -25,6 +25,8 @@ TAGS = [
     {"name": "profiling", "description": "Column profiles, PII and data quality"},
     {"name": "mapping", "description": "Target schemas and the mapping of source columns to target fields"},
     {"name": "transform", "description": "Mapping review, transform rules, dry run, load, reconciliation, quarantine, rollback"},
+    {"name": "billing", "description": "The organization's plan, usage meter, invoices (admin for invoices and plan changes)"},
+    {"name": "analytics", "description": "Revenue (admin) and operations (analyst and admin) metrics over daily snapshots, with comparison, granularity and CSV export"},
     {"name": "admin", "description": "Users, roles, audit log and leads (admin only)"},
     {"name": "public", "description": "Endpoints for the marketing site, no sign in"},
     {"name": "ops", "description": "Health"},
@@ -62,6 +64,8 @@ def create_app() -> FastAPI:
     app.include_router(transform.router)
     app.include_router(jobs.router)
     app.include_router(public.router)
+    app.include_router(billing.router)
+    app.include_router(analytics.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:

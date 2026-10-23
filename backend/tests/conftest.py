@@ -218,6 +218,10 @@ def client(app_engine: Engine, api_users: ApiUsers, tmp_path, monkeypatch) -> It
     settings = get_settings()
     monkeypatch.setattr(settings, "upload_dir", str(tmp_path / "uploads"))
     monkeypatch.setattr(settings, "jobs_execution", "eager")  # stages run inside the request, no broker needed
+    monkeypatch.setattr(settings, "cache_backend", "memory")  # no Redis in the tests
+    from app.billing import cache as analytics_cache
+
+    analytics_cache.reset()
     limiter.enabled = False
     limiter.reset()
     with TestClient(create_app(), base_url="https://testserver", headers=CSRF) as test_client:
@@ -246,3 +250,25 @@ def _no_real_http(monkeypatch):  # type: ignore[no-untyped-def]
         raise AssertionError(f"A test tried to reach the network: {request.method} {request.url.host}")
 
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", blocked)
+
+
+# ---------------------------------------------------------------------------------------------
+# Simulated billing history (Phase 10), written once per test run and only when a test asks for it
+# ---------------------------------------------------------------------------------------------
+
+from datetime import date  # noqa: E402
+
+HISTORY_END = date(2026, 10, 22)
+
+
+@pytest.fixture(scope="session")
+def history(admin_engine: Engine):  # type: ignore[no-untyped-def]
+    from app.billing import history as billing_history
+
+    data = billing_history.generate_history(42, HISTORY_END)
+    summary = billing_history.write_history(admin_engine, data)
+    data.summary = summary  # type: ignore[attr-defined]
+    yield data
+    with admin_engine.begin() as connection:
+        connection.execute(text("DELETE FROM organizations WHERE is_simulated"))
+        connection.execute(text("DELETE FROM daily_metrics WHERE metric_date BETWEEN :a AND :b"), {"a": data.start, "b": data.end})

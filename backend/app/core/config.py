@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     job_task_retry_base_seconds: int = 5
     job_stage_busy_retries: int = 20  # a second stage for the same job waits for the first one this many times
     job_task_time_limit_seconds: int = 3600
+    # Analytics responses are cached for a minute: in Redis, in memory (local work), or not at all.
+    cache_backend: str = "redis"
+    analytics_cache_seconds: int = 60
     sse_poll_seconds: float = 0.5
     sse_heartbeat_seconds: float = 15.0
     sse_max_seconds: int = 300  # a stream ends after this long; the browser reconnects with Last-Event-ID
@@ -100,6 +103,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _refuse_dev_secrets_outside_dev(self) -> "Settings":
+        if self.cache_backend not in {"redis", "memory", "off"}:
+            raise ValueError("CACHE_BACKEND must be redis, memory or off")
         if self.jobs_execution not in {"celery", "eager"}:
             raise ValueError("JOBS_EXECUTION must be celery or eager")
         if self.environment not in {"local", "test"} and self.jobs_execution == "eager":

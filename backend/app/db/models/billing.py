@@ -8,12 +8,14 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, CreatedAtMixin, IdMixin, TenantMixin
@@ -47,6 +49,8 @@ class Subscription(IdMixin, CreatedAtMixin, TenantMixin, Base):
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_simulated: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
+    __table_args__ = (Index("uq_subscriptions_one_active_per_org", "org_id", unique=True, postgresql_where=text("ended_at IS NULL")),)
+
 
 class UsageEvent(IdMixin, TenantMixin, Base):
     __tablename__ = "usage_events"
@@ -59,6 +63,8 @@ class UsageEvent(IdMixin, TenantMixin, Base):
     duration_ms: Mapped[int | None] = mapped_column(BigInteger)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     is_simulated: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+
+    __table_args__ = (Index("uq_usage_events_job", "job_id", unique=True, postgresql_where=text("job_id IS NOT NULL")),)
 
 
 class Invoice(IdMixin, CreatedAtMixin, TenantMixin, Base):
@@ -75,6 +81,11 @@ class Invoice(IdMixin, CreatedAtMixin, TenantMixin, Base):
     due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_simulated: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+
+    __table_args__ = (
+        Index("uq_invoices_subscription_period", "subscription_id", "period_start", unique=True),
+        Index("ix_invoices_period_end", "period_end"),
+    )
 
 
 class InvoiceLine(IdMixin, TenantMixin, Base):
@@ -113,4 +124,8 @@ class DailyMetric(IdMixin, CreatedAtMixin, Base):
     success_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
     avg_duration_ms: Mapped[int | None] = mapped_column(BigInteger)
     quality_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
+    subscription_revenue_cents: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default="0")
+    paying_orgs: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    nrr_12m: Mapped[Decimal | None] = mapped_column(Numeric(8, 4))
+    breakdown: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
     is_simulated: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")

@@ -60,6 +60,18 @@ services:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
 
+  # Schedules the nightly metrics snapshot and the monthly invoice run. Exactly one instance should run.
+  beat:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["celery", "-A", "app.jobs.celery_app:celery_app", "beat", "--loglevel=INFO", "--schedule", "/tmp/celerybeat-schedule"]
+    environment: *app_env
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
   # Static analysis sandbox for uploaded software. Started on demand: docker compose --profile rea up
   rea-runner:
     profiles: ["rea"]

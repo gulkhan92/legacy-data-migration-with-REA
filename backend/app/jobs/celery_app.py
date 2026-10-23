@@ -1,6 +1,7 @@
 """The Celery application. Redis is the broker; results are not stored, a job's progress lives in job_events."""
 
 from celery import Celery
+from celery.schedules import crontab
 
 from app.core.config import get_settings
 
@@ -28,6 +29,11 @@ def make_celery() -> Celery:
         # Publishing from the API must fail fast when Redis is down instead of hanging the request.
         task_publish_retry=True,
         task_publish_retry_policy={"max_retries": 1, "interval_start": 0, "interval_step": 0.2, "interval_max": 0.5},
+        # Run by `celery beat`: the metrics snapshot every night, the invoices of the previous month on the first.
+        beat_schedule={
+            "nightly-snapshot": {"task": "legacylift.nightly_snapshot", "schedule": crontab(hour=0, minute=30)},
+            "monthly-invoices": {"task": "legacylift.monthly_invoices", "schedule": crontab(day_of_month=1, hour=1, minute=0)},
+        },
         task_always_eager=settings.jobs_execution == "eager",
         task_eager_propagates=False,  # retries must run inside Celery; dispatch re-raises what really failed
     )
