@@ -302,6 +302,16 @@ def write_history(engine: Engine, history: History, *, snapshot: bool = True) ->
                 session.execute(insert(table), chunk)
         session.commit()
 
+        # what the jobs left behind besides usage: their events, columns, mappings and a sample of quarantined rows
+        from app.billing import history_ops
+
+        ops = history_ops.operational_rows(history, {i: o.periods[-1].plan for i, o in enumerate(history.orgs)}, random.Random(history.seed + 2))
+        for table, rows in ((models.SourceColumn.__table__, ops["source_columns"]), (models.Mapping.__table__, ops["mappings"]), (models.JobEvent.__table__, ops["job_events"]),
+                            (models.QuarantinedRow.__table__, ops["quarantined_rows"])):  # fmt: skip
+            for chunk in _chunks(rows, 5_000):
+                session.execute(insert(table), chunk)
+        session.commit()
+
         # invoices: the real code, month by month, for every month that has ended
         created = 0
         for month in history.months:
@@ -341,7 +351,7 @@ def write_history(engine: Engine, history: History, *, snapshot: bool = True) ->
     if snapshot:
         days = snapshots.snapshot_range(history.start, history.end, factory=factory)
     return {"organizations": len(history.orgs), "subscriptions": len(subs), "jobs": len(history.jobs), "usage_events": len(usage_rows), "llm_calls": len(call_rows), "invoices": created,
-            "snapshots": days}  # fmt: skip
+            "job_events": len(ops["job_events"]), "mappings": len(ops["mappings"]), "snapshots": days}  # fmt: skip
 
 
 def seed_history(engine: Engine, seed: int = 42, end: date | None = None, *, reset: bool = False, snapshot: bool = True) -> dict[str, Any]:

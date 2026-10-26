@@ -5,6 +5,7 @@ fell out of range (and per step of the rule), and a before and after preview of 
 sees what goes wrong. Nothing here is stored except the failure counts on the rules.
 """
 
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -42,6 +43,8 @@ class TableDryRun:
     would_quarantine: dict[str, int]
     rules: list[RuleReport]
     preview: list[dict[str, Any]]
+    source_rows: int | None = None  # rows in the whole source table
+    seconds: float = 0.0  # what the sample took to transform
 
 
 @dataclass
@@ -64,8 +67,10 @@ def _json(value: Any) -> Any:
 def dry_run_table(plan: TablePlan, source: TableSource, sample_rows: int = SAMPLE_ROWS) -> tuple[TableDryRun, dict[str, RuleStats]]:
     chunk = next(iter(source.chunks(sample_rows)), pd.DataFrame())
     if chunk.empty:
-        return TableDryRun(plan.target_table, plan.source_table, 0, 0, {}, [], []), {}
+        return TableDryRun(plan.target_table, plan.source_table, 0, 0, {}, [], [], source.row_count, 0.0), {}
+    started = time.perf_counter()
     result = transform_chunk(plan, chunk)
+    seconds = time.perf_counter() - started
     counts: dict[str, int] = {}
     for reason in result.reasons.dropna():
         counts[reason] = counts.get(reason, 0) + 1
@@ -82,7 +87,7 @@ def dry_run_table(plan: TablePlan, source: TableSource, sample_rows: int = SAMPL
         before = {c: _json(chunk.at[index, c]) for c in plan.source_columns}
         after = {f: to_text(result.values.at[index, f]) for f in plan.fields}
         preview.append({"row": int(index), "before": before, "after": after, "reason": result.reasons[index], "detail": result.details[index]})
-    return TableDryRun(plan.target_table, plan.source_table, len(chunk), len(chunk) - sum(counts.values()), counts, reports, preview), result.stats
+    return TableDryRun(plan.target_table, plan.source_table, len(chunk), len(chunk) - sum(counts.values()), counts, reports, preview, source.row_count, round(seconds, 4)), result.stats
 
 
 def dry_run(plan: Plan, sources: dict[str, TableSource], sample_rows: int = SAMPLE_ROWS) -> tuple[DryRun, dict[tuple[str, str], RuleReport]]:

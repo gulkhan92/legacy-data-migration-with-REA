@@ -60,5 +60,7 @@ class OrgSettings(CreatedAtMixin, Base):
     llm_job_token_budget: Mapped[int] = mapped_column(Integer, nullable=False, server_default="6000")
     llm_org_daily_token_budget: Mapped[int] = mapped_column(Integer, nullable=False, server_default="100000")
     llm_max_calls_per_job: Mapped[int] = mapped_column(Integer, nullable=False, server_default="2")
+    # How long the encrypted copy of an uploaded file is kept after its jobs have finished (a nightly job deletes older copies).
+    retention_days: Mapped[int] = mapped_column(Integer, nullable=False, server_default="365")
     updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -9,6 +11,8 @@ from app.api.deps import (
     get_principal,
     get_tenant_db,
 )
+from pydantic import BaseModel
+
 from app.api.schemas import LoginRequest, MeResponse
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
@@ -107,3 +111,25 @@ def logout(request: Request, response: Response) -> Response:
 @router.get("/me", response_model=MeResponse)
 def me(principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> MeResponse:
     return _me(db, principal)
+
+
+class SwitchRequest(BaseModel):
+    org_id: uuid.UUID
+
+
+@router.get("/organizations", summary="The organizations the signed in user belongs to")
+def organizations(principal: Principal = Depends(get_principal)) -> list[dict[str, object]]:
+    orgs = auth_service.list_organizations(principal.user_id)
+    return [{**o, "current": o["org_id"] == str(principal.org_id)} for o in orgs]
+
+
+@router.post("/switch", response_model=MeResponse, summary="Switch to another organization of the signed in user")
+@limiter.limit("30/minute")
+def switch(request: Request, response: Response, body: SwitchRequest, principal: Principal = Depends(get_principal)) -> MeResponse:
+    try:
+        result = auth_service.switch_organization(principal.user_id, body.org_id, request.cookies.get(REFRESH_COOKIE), ip=client_ip(request))
+    except AuthenticationFailed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not belong to that organization") from None
+    _set_cookies(response, result)
+    with tenant_session(result.principal.org_id) as db:
+        return _me(db, result.principal)

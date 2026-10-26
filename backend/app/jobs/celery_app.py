@@ -33,6 +33,7 @@ def make_celery() -> Celery:
         beat_schedule={
             "nightly-snapshot": {"task": "legacylift.nightly_snapshot", "schedule": crontab(hour=0, minute=30)},
             "monthly-invoices": {"task": "legacylift.monthly_invoices", "schedule": crontab(day_of_month=1, hour=1, minute=0)},
+            "purge-uploads": {"task": "legacylift.purge_uploads", "schedule": crontab(hour=2, minute=15)},
         },
         task_always_eager=settings.jobs_execution == "eager",
         task_eager_propagates=False,  # retries must run inside Celery; dispatch re-raises what really failed

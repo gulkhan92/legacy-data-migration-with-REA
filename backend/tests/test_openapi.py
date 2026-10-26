@@ -28,7 +28,7 @@ def models_with_examples() -> list[type[BaseModel]]:
 
 def test_every_example_validates_against_its_own_model() -> None:
     models = models_with_examples()
-    assert {m.__name__ for m in models} >= {"JobCreate", "RunRequest", "Queued", "MappingPatch", "BulkApprove", "PreviewRequest", "UserCreate", "RoleChange", "LeadIn", "PublicMetrics", "PlanChange", "InvoiceStatusChange", "PublicPlan"}
+    assert {m.__name__ for m in models} >= {"JobCreate", "RunRequest", "Queued", "MappingPatch", "BulkApprove", "PreviewRequest", "UserCreate", "RoleChange", "LeadIn", "PublicMetrics", "PlanChange", "InvoiceStatusChange", "PublicPlan", "RetentionIn"}
     for model in models:
         for example in model.model_config["json_schema_extra"]["examples"]:  # type: ignore[index]
             instance = model.model_validate(example)
@@ -51,7 +51,7 @@ def test_every_operation_is_tagged_and_described(spec) -> None:  # type: ignore[
             assert set(operation["tags"]) <= declared | {"ops"}, f"{method} {path} uses an undeclared tag"
             assert operation.get("summary") or operation.get("description"), f"{method} {path} is not described"
             assert any(code.startswith("2") for code in operation["responses"]), f"{method} {path} documents no success response"
-    assert count >= 74
+    assert count >= 84
 
 
 def test_the_document_names_the_error_format_and_csrf_header(spec) -> None:  # type: ignore[no-untyped-def]

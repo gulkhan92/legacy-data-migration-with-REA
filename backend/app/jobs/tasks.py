@@ -49,3 +49,11 @@ def monthly_invoices_task() -> dict[str, int]:
 
     run = invoicing.run_invoices(invoicing.previous_month(datetime.now(UTC).date()))
     return {"created": run.created, "skipped": run.skipped, "failed": len(run.failed)}
+
+
+@celery_app.task(name="legacylift.purge_uploads")
+def purge_uploads_task() -> dict[str, int]:
+    """Delete the encrypted copies of uploads that have outlived their organization's retention period (scheduled every night)."""
+    from app.services import retention
+
+    return retention.purge_expired_uploads()

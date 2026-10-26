@@ -290,3 +290,37 @@ def invoice_page(db: Session, status: str | None, q: str | None, start: date | N
     raw = db.execute(text("SELECT platform_invoice_page(:s, :q, :a, :b, :l, :o)"), {"s": status, "q": pattern, "a": start, "b": end, "l": limit, "o": offset}).scalar_one()
     data = raw if isinstance(raw, dict) else json.loads(raw)
     return {**data, "limit": limit, "offset": offset, "footnote": FOOTNOTE}
+
+
+def _json(raw: Any) -> Any:
+    return raw if isinstance(raw, (dict, list)) else json.loads(raw)
+
+
+STAGES = ["discover", "profile", "map", "rules", "dry_run", "load"]
+METHODS = ["memory", "embedding", "llm", "human"]
+
+
+def operations_detail(db: Session, start: date, end: date) -> dict[str, Any]:
+    """What the daily snapshot does not hold: how columns were mapped, the latency of each stage, why rows were quarantined, which stages
+    failed, the discovery confidence histogram and the model call figures. Estimated token savings use only what is recorded."""
+    data = _json(db.execute(text("SELECT platform_operations_detail(:a, :b)"), {"a": start, "b": end}).scalar_one())
+    methods = {m: int(data["mapping_methods"].get(m, 0)) for m in METHODS}
+    llm = data["llm"]
+    total = sum(methods.values())
+    per_column = (llm["tokens"] / methods["llm"]) if methods["llm"] else 0
+    return {
+        "range": {"from": start.isoformat(), "to": end.isoformat()},
+        "mapping_methods": methods, "mapping_total": total,
+        "stage_latency": {stage: data["stage_latency"][stage] for stage in STAGES if stage in data["stage_latency"]},
+        "quarantine_reasons": data["quarantine_reasons"], "failed_stages": data["failed_stages"],
+        "discovery_confidence": data["discovery_confidence"],
+        "llm": {**llm, "cache_hit_rate": ratio(llm["cache_hits"], llm["cache_hits"] + llm["calls_made"])},
+        "tokens_saved_by_cache": int(data["tokens_saved_by_cache"]),
+        "tokens_saved_by_memory_estimate": round(methods["memory"] * per_column),
+        "footnote": "Token savings from memory are an estimate: the mapped-from-memory columns times the average tokens the model used per column it resolved in the same period.",
+    }  # fmt: skip
+
+
+def cohort_retention(db: Session, as_of: date) -> dict[str, Any]:
+    cohorts = _json(db.execute(text("SELECT platform_cohort_retention(:d)"), {"d": as_of}).scalar_one())
+    return {"as_of": as_of.isoformat(), "cohorts": cohorts, "footnote": FOOTNOTE}

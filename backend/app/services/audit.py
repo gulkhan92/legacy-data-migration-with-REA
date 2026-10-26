@@ -34,6 +34,10 @@ class AuditAction:
     USER_REMOVE = "user.remove"
     PLAN_CHANGE = "billing.plan_change"
     INVOICE_STATUS = "billing.invoice_status"
+    ORG_SWITCH = "auth.org_switch"
+    RETENTION_PURGE = "retention.purge"
+    MEMORY_DELETE = "mapping.memory_delete"
+    RETENTION_CHANGE = "settings.retention_change"
 
 
 def _clean_ip(value: str | None) -> str | None:

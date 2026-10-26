@@ -36,11 +36,12 @@ class Range:
         date_to: date | None = Query(None, alias="to", description="Last day (default: the latest snapshot)"),
         granularity: Granularity = Query("day", description="Bucket size of the series"),
         compare: bool = Query(False, description="Also return the previous period of the same length and the change"),
+        days: int | None = Query(None, ge=1, le=MAX_SPAN_DAYS, description="The last N days up to `to` (default: the latest snapshot); ignored when `from` is given"),
     ) -> None:
-        self.date_from, self.date_to, self.granularity, self.compare = date_from, date_to, granularity, compare
+        self.date_from, self.date_to, self.granularity, self.compare, self.days = date_from, date_to, granularity, compare, days
 
     def resolve(self, db: Session) -> tuple[date, date]:
-        start, end = analytics.default_range(db, self.date_from, self.date_to)
+        start, end = analytics.default_range(db, self.date_from, self.date_to, default_days=self.days or 90)
         if start > end:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="`from` must not be after `to`")
         if (end - start).days + 1 > MAX_SPAN_DAYS:
@@ -105,6 +106,18 @@ def invoices(
 @router.get("/operations", summary="Jobs, success rate, duration, tokens by provider, failovers, cache hits, quality (analyst and admin)")
 def operations(r: Range = Depends(), _: Principal = Depends(operations_roles), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
     return _operations(db, r)
+
+
+@router.get("/operations/detail", summary="Mapping methods, stage latency, errors, discovery confidence and model figures (analyst and admin)")
+def operations_detail(r: Range = Depends(), _: Principal = Depends(operations_roles), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+    start, end = r.resolve(db)
+    return _run("operations-detail", {"a": start, "b": end}, lambda: analytics.operations_detail(db, start, end))
+
+
+@router.get("/revenue/cohorts", summary="Retention of customers by the month they signed up (admin)")
+def revenue_cohorts(as_of: date | None = Query(None, description="Default: the latest snapshot"), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+    day = as_of or analytics.latest_date(db) or date.today()
+    return _run("cohorts", {"d": day}, lambda: analytics.cohort_retention(db, day))
 
 
 # ------------------------------------------------------------------ CSV

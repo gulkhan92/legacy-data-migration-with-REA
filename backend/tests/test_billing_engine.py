@@ -313,7 +313,8 @@ def test_the_functions_are_not_open_to_everyone(admin_engine) -> None:  # type: 
             "FROM pg_proc p WHERE p.proname LIKE 'platform\\_%' ORDER BY 1"
         )).all()
     seen = {r[0]: r[1:] for r in rows}
-    assert set(seen) == {"platform_org_state", "platform_billable_orgs", "platform_day_metrics", "platform_top_customers", "platform_invoice_page", "platform_revenue_totals", "platform_mark_overdue"}
+    assert set(seen) == {"platform_org_state", "platform_billable_orgs", "platform_day_metrics", "platform_top_customers", "platform_invoice_page", "platform_revenue_totals", "platform_mark_overdue",
+                    "platform_operations_detail", "platform_cohort_retention", "platform_orgs_with_uploads", "platform_user_organizations"}
     assert all(definer for _, _, definer in seen.values())  # all run with the owner's rights...
     assert not any(public for _, public, _ in seen.values())  # ...so none is open to PUBLIC
     assert [name for name, (app, _, _) in seen.items() if not app] == ["platform_org_state"]  # and only the internal one is closed to the application

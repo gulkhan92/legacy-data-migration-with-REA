@@ -31,23 +31,37 @@ async function readError(response: Response): Promise<ApiError> {
   }
 }
 
-export async function api<T>(path: string, { method = "GET", body, signal }: Options = {}): Promise<T> {
+async function send(path: string, { method = "GET", body, signal }: Options): Promise<Response> {
+  const form = typeof FormData !== "undefined" && body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(path, {
       method,
       credentials: "include",
       signal,
-      headers: { [CSRF_HEADER]: CSRF_VALUE, Accept: "application/json", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: { [CSRF_HEADER]: CSRF_VALUE, Accept: "application/json", ...(body === undefined || form ? {} : { "Content-Type": "application/json" }) },
+      body: body === undefined ? undefined : form ? (body as FormData) : JSON.stringify(body),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     throw new ApiError(0, "network_error", "The server could not be reached. Check your connection and try again.");
   }
   if (!response.ok) throw await readError(response);
+  return response;
+}
+
+export async function api<T>(path: string, options: Options = {}): Promise<T> {
+  const response = await send(path, options);
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/** A list endpoint that reports its total in the X-Total-Count header instead of in the body. */
+export async function apiWithTotal<T>(path: string, options: Options = {}): Promise<{ items: T[]; total: number }> {
+  const response = await send(path, options);
+  const items = (await response.json()) as T[];
+  const total = Number(response.headers.get("X-Total-Count"));
+  return { items, total: Number.isFinite(total) && total > 0 ? total : items.length };
 }
 
 // ------------------------------------------------------------------ the public endpoints

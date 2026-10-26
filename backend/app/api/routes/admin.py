@@ -2,19 +2,19 @@
 
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import func, select, update
+from sqlalchemy import Text, cast, func, select, update
 from sqlalchemy.orm import Session
 
 from app.api.deps import client_ip, get_tenant_db, require_role
 from app.api.pagination import Page, PageParams
 from app.api.schemas import AuditEntryOut
 from app.core.security import Principal, hash_password, validate_password
-from app.db.models import AuditLog, Lead, Membership, RefreshToken, User
+from app.db.models import AuditLog, Lead, Membership, OrgSettings, RefreshToken, User
 from app.db.models.enums import Role
 from app.services.audit import AuditAction, record_audit
 
@@ -82,18 +82,63 @@ def _membership(db: Session, user_id: uuid.UUID) -> tuple[User, Membership]:
     return row[0], row[1]
 
 
-@router.get("/audit-log", response_model=list[AuditEntryOut], summary="The organization's audit log, newest first")
+@router.get("/audit-log", response_model=list[AuditEntryOut], summary="The organization's audit log, newest first, with search")
 def audit_log(
+    response: Response,
     action: str | None = None,
+    q: str | None = Query(None, max_length=100, description="Part of the action, the entity, the person or the details"),
+    user_id: uuid.UUID | None = None,
+    date_from: date | None = Query(None, alias="from"),
+    date_to: date | None = Query(None, alias="to"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     _: Principal = Depends(require_role()),  # admin only
     db: Session = Depends(get_tenant_db),
-) -> list[AuditLog]:
-    stmt = select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit).offset(offset)
+) -> list[AuditEntryOut]:
+    """The total number of matching entries is in the `X-Total-Count` header."""
+    stmt = select(AuditLog, User.full_name).outerjoin(User, User.id == AuditLog.user_id)
     if action:
         stmt = stmt.where(AuditLog.action == action)
-    return list(db.scalars(stmt))
+    if user_id:
+        stmt = stmt.where(AuditLog.user_id == user_id)
+    if date_from:
+        stmt = stmt.where(AuditLog.created_at >= datetime.combine(date_from, time.min, tzinfo=UTC))
+    if date_to:
+        stmt = stmt.where(AuditLog.created_at < datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=UTC))
+    if q:
+        like = f"%{q.lower().replace('%', '').replace('_', '')}%"
+        stmt = stmt.where(
+            func.lower(AuditLog.action).like(like) | func.lower(func.coalesce(AuditLog.entity_type, "")).like(like) | func.lower(func.coalesce(AuditLog.entity_id, "")).like(like)
+            | func.lower(func.coalesce(User.full_name, "")).like(like) | func.lower(cast(AuditLog.detail, Text)).like(like)
+        )
+    response.headers["X-Total-Count"] = str(db.scalar(select(func.count()).select_from(stmt.subquery())) or 0)
+    rows = db.execute(stmt.order_by(AuditLog.created_at.desc(), AuditLog.id).limit(limit).offset(offset)).all()
+    return [AuditEntryOut.model_validate(entry).model_copy(update={"user_name": name}) for entry, name in rows]
+
+
+class RetentionIn(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"retention_days": 90}]})
+
+    retention_days: int = Field(ge=7, le=3650, description="Days an uploaded file's encrypted copy is kept after its jobs have finished")
+
+
+@router.get("/retention", summary="How long uploaded files are kept")
+def get_retention(principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+    row = db.get(OrgSettings, principal.org_id)
+    return {"retention_days": row.retention_days if row else 365, "applies_to": "The encrypted copy of an uploaded file. Migrated data, reports and the audit log are not touched."}
+
+
+@router.put("/retention", summary="Change how long uploaded files are kept (admin)")
+def put_retention(body: RetentionIn, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+    row = db.get(OrgSettings, principal.org_id)
+    previous = row.retention_days if row else 365
+    if row is None:
+        row = OrgSettings(org_id=principal.org_id)
+        db.add(row)
+    row.retention_days, row.updated_by = body.retention_days, principal.user_id
+    db.flush()
+    record_audit(db, AuditAction.RETENTION_CHANGE, org_id=principal.org_id, user_id=principal.user_id, entity_type="retention", ip=client_ip(request), detail={"from": previous, "to": body.retention_days})
+    return get_retention(principal, db)
 
 
 @router.get("/users", response_model=Page[UserOut], summary="The users of the organization")

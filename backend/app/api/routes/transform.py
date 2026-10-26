@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import client_ip, get_principal, get_tenant_db, require_role
 from app.core.security import Principal
-from app.db.models import Job, Mapping, QuarantinedRow, TargetField, TransformRule
+from app.db.models import Job, Mapping, QuarantinedRow, TargetField, TransformRule, UsageEvent
 from app.db.models.enums import JobStatus, MappingStatus, Role
 from app.db.session import make_session_factory, scoped_session
 from app.mapping import service as mapping_service
@@ -150,6 +150,20 @@ def put_code_map(job_id: uuid.UUID, rule_id: uuid.UUID, body: CodeMapRequest, pr
 # ------------------------------------------------------------------ dry run, load, rollback, reports
 
 
+def _cost(db: Session, job: Job, run: Any) -> dict[str, Any]:
+    """What loading this job will cost: model tokens so far, and a rough time for the load. The time comes from how fast this
+    organization's earlier loads ran (the median of the last ones) and, when there are fewer than three, from how fast the sample was transformed."""
+    rows = sum(t.source_rows or 0 for t in run.tables)
+    speeds = [float(e.records_loaded) / (e.duration_ms / 1000) for e in db.scalars(select(UsageEvent).where(UsageEvent.duration_ms > 0, UsageEvent.records_loaded > 0).order_by(UsageEvent.occurred_at.desc()).limit(20))]
+    if len(speeds) >= 3:
+        speeds.sort()
+        rate, basis = speeds[len(speeds) // 2], f"the median speed of this organization's last {len(speeds)} loads"
+    else:
+        sample_rows, sample_seconds = sum(t.sample_rows for t in run.tables), sum(t.seconds for t in run.tables)
+        rate, basis = (sample_rows / sample_seconds / 3 if sample_seconds > 0 else 0.0), "the speed of the sample, with a margin for staging and checks (no earlier loads to go by)"
+    return {"source_rows": rows, "tokens_used": job.tokens_used, "token_budget": job.token_budget, "estimated_seconds": round(rows / rate, 1) if rate > 0 else None, "basis": basis}
+
+
 @router.post("/dry-run")
 def dry_run(job_id: uuid.UUID, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
     job = _job(db, job_id)
@@ -157,7 +171,8 @@ def dry_run(job_id: uuid.UUID, principal: Principal = Depends(require_role(Role.
         run = service.dry_run(db, job)
     except service.TransformUnavailable as exc:
         raise _conflict(exc) from None
-    return {"status": job.status.value, "ready": run.ready, "blocking": run.blocking, "warnings": run.warnings, "tables": [asdict(t) for t in run.tables]}
+    return {"status": job.status.value, "ready": run.ready, "blocking": run.blocking, "warnings": run.warnings, "tables": [asdict(t) for t in run.tables],
+            "cost": _cost(db, job, run)}  # fmt: skip
 
 
 @router.post("/load")

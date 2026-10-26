@@ -15,7 +15,7 @@ export function Logo({ className, onDark = false }: { className?: string; onDark
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <LogoMark />
-      <span className={cn("text-lg font-bold tracking-tight", onDark ? "text-white" : "text-navy")}>LegacyLift</span>
+      <span className={cn("text-lg font-bold tracking-tight", onDark ? "text-white" : "text-navy dark:text-white")}>LegacyLift</span>
     </span>
   );
 }

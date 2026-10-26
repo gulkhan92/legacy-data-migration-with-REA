@@ -2,7 +2,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
@@ -193,3 +193,33 @@ def logout(
             record_audit(
                 session, AuditAction.LOGOUT, org_id=principal.org_id, user_id=principal.user_id, ip=ip
             )
+
+
+def list_organizations(user_id: uuid.UUID, *, factory: sessionmaker[Session] | None = None) -> list[dict[str, str]]:
+    """The organizations a user belongs to, for the organization switcher. Names of other organizations are hidden from the application
+    by Row Level Security, so they come from a function that answers for one user id (the one in the verified token) only."""
+    with scoped_session(user_id=user_id, factory=_factory(factory)) as session:
+        rows = session.execute(text("SELECT org_id, name, role FROM platform_user_organizations(:u)"), {"u": user_id}).all()
+    return [{"org_id": str(r[0]), "name": r[1], "role": r[2]} for r in rows]
+
+
+def switch_organization(
+    user_id: uuid.UUID, org_id: uuid.UUID, raw_refresh_token: str | None, *, ip: str | None = None, factory: sessionmaker[Session] | None = None
+) -> AuthResult:
+    """Sign the same user in to another organization they belong to: new tokens for it, and the refresh token of the one being left is revoked."""
+    factory = _factory(factory)
+    now = datetime.now(UTC)
+    with scoped_session(user_id=user_id, factory=factory) as session:
+        membership = session.scalar(select(Membership).where(Membership.user_id == user_id, Membership.org_id == org_id))
+        role = membership.role if membership else None
+        user = session.get(User, user_id)
+        active = bool(user and user.is_active)
+    if role is None or not active:
+        raise AuthenticationFailed
+    if raw_refresh_token:
+        with scoped_session(factory=factory) as session:
+            session.execute(update(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(raw_refresh_token), RefreshToken.revoked_at.is_(None)).values(revoked_at=now))
+    with scoped_session(org_id=org_id, user_id=user_id, factory=factory) as session:
+        result = _issue_tokens(session, user_id, org_id, role)
+        record_audit(session, AuditAction.ORG_SWITCH, org_id=org_id, user_id=user_id, ip=ip)
+    return result

@@ -27,6 +27,10 @@ def injected(kind: str) -> dict[tuple[str, str], int]:
 def run_load(client, job: str, schema: str, codes, corrections=None):  # type: ignore[no-untyped-def]
     dry = prepare(client, job, schema, codes, corrections)
     assert dry["ready"] is True and dry["blocking"] == []
+    cost = dry["cost"]  # what the console shows before a load: rows, tokens so far, and a rough time
+    assert cost["source_rows"] == sum(t["source_rows"] for t in dry["tables"]) > 0 and cost["token_budget"] > 0 and cost["tokens_used"] >= 0
+    assert cost["estimated_seconds"] is not None and cost["estimated_seconds"] > 0 and cost["basis"]
+    assert all(t["source_rows"] and t["seconds"] >= 0 for t in dry["tables"])
     response = client.post(f"/api/v1/jobs/{job}/load")
     assert response.status_code == 200, response.text
     return response.json()

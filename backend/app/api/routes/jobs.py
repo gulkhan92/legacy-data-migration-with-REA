@@ -9,7 +9,8 @@ import json
 import time
 import uuid
 from collections.abc import AsyncIterator
-from datetime import datetime
+from datetime import UTC, date, datetime, timedelta
+from datetime import time as clock_time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -25,7 +26,7 @@ from app.api.pagination import Page, PageParams
 from app.core.config import get_settings
 from app.core.security import Principal
 from app.db.job_state import InvalidTransition
-from app.db.models import Job, JobEvent, Source, TargetSchema
+from app.db.models import Job, JobEvent, Source, TargetSchema, User
 from app.db.models.enums import JobStatus, Role, SourceKind
 from app.db.repositories.jobs import TERMINAL_STATUSES, JobRepository
 from app.db.session import make_session_factory, scoped_session
@@ -65,6 +66,9 @@ class JobOut(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     next_stage: Stage | None = Field(None, description="The stage that moves this job forward, when one is available")
+    source_name: str | None = Field(None, description="The name of the uploaded system")
+    source_kind: SourceKind | None = None
+    owner_name: str | None = Field(None, description="Who created the job")
 
 
 class RunRequest(BaseModel):
@@ -110,10 +114,21 @@ class EventList(BaseModel):
     last_id: int | None = Field(description="Pass as `after` to get only newer events")
 
 
-def _out(job: Job) -> JobOut:
+def _out(job: Job, source: Source | None = None, owner: User | None = None) -> JobOut:
     out = JobOut.model_validate(job)
     out.next_stage = NEXT_STAGE.get(job.status)
+    if source is not None:
+        out.source_name, out.source_kind = source.name, source.kind
+    if owner is not None:
+        out.owner_name = owner.full_name
     return out
+
+
+def _enrich(db: Session, jobs: list[Job]) -> list[JobOut]:
+    """The jobs with the name and kind of their source and the name of their owner, in two queries for the whole list."""
+    sources = {s.id: s for s in db.scalars(select(Source).where(Source.id.in_({j.source_id for j in jobs})))} if jobs else {}
+    owners = {u.id: u for u in db.scalars(select(User).where(User.id.in_({j.created_by for j in jobs if j.created_by})))} if jobs else {}
+    return [_out(j, sources.get(j.source_id), owners.get(j.created_by) if j.created_by else None) for j in jobs]
 
 
 def _job(db: Session, job_id: uuid.UUID) -> Job:
@@ -149,27 +164,45 @@ def create_job(body: JobCreate, request: Request, principal: Principal = Depends
     job = JobRepository(db).add(Job(source_id=source.id, data_source_id=body.data_source_id, target_schema_id=schema.id if schema else None, created_by=principal.user_id,
                                     status=JobStatus.CREATED, token_budget=budget))  # fmt: skip
     record_audit(db, AuditAction.JOB_CREATE, org_id=principal.org_id, user_id=principal.user_id, entity_type="job", entity_id=str(job.id), ip=client_ip(request), detail={"source_id": str(source.id)})
-    return _out(job)
+    return _enrich(db, [job])[0]
 
 
-@router.get("", response_model=Page[JobOut], summary="List jobs, newest first")
+SORTS = {"created": Job.created_at, "updated": Job.updated_at, "status": Job.status}
+
+
+@router.get("", response_model=Page[JobOut], summary="List jobs, newest first by default")
 def list_jobs(
-    status_filter: JobStatus | None = Query(None, alias="status"), source_id: uuid.UUID | None = None, page: PageParams = Depends(),
-    _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db),
+    status_filter: JobStatus | None = Query(None, alias="status"), source_id: uuid.UUID | None = None,
+    source_kind: SourceKind | None = Query(None, description="Filter by the kind of system"), q: str | None = Query(None, max_length=100, description="Part of the source name"),
+    created_from: date | None = Query(None, description="Created on or after this day"), created_to: date | None = Query(None, description="Created on or before this day"),
+    owner_id: uuid.UUID | None = None, sort: str = Query("created", pattern="^(created|updated|status|source|kind)$"), order: str = Query("desc", pattern="^(asc|desc)$"),
+    page: PageParams = Depends(), _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db),
 ) -> Page[JobOut]:
-    stmt = select(Job)
+    stmt = select(Job).join(Source, Source.id == Job.source_id)
     if status_filter:
         stmt = stmt.where(Job.status == status_filter)
     if source_id:
         stmt = stmt.where(Job.source_id == source_id)
+    if source_kind:
+        stmt = stmt.where(Source.kind == source_kind)
+    if q:
+        stmt = stmt.where(func.lower(Source.name).like(f"%{q.lower().replace('%', '').replace('_', '')}%"))
+    if created_from:
+        stmt = stmt.where(Job.created_at >= datetime.combine(created_from, clock_time.min, tzinfo=UTC))
+    if created_to:
+        stmt = stmt.where(Job.created_at < datetime.combine(created_to + timedelta(days=1), clock_time.min, tzinfo=UTC))
+    if owner_id:
+        stmt = stmt.where(Job.created_by == owner_id)
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    rows = db.scalars(stmt.order_by(Job.created_at.desc(), Job.id).limit(page.limit).offset(page.offset)).all()
-    return Page[JobOut](items=[_out(j) for j in rows], total=int(total), limit=page.limit, offset=page.offset)
+    column = {"source": Source.name, "kind": Source.kind}.get(sort) or SORTS[sort]
+    ordering = column.asc() if order == "asc" else column.desc()
+    rows = db.scalars(stmt.order_by(ordering, Job.id).limit(page.limit).offset(page.offset)).all()
+    return Page[JobOut](items=_enrich(db, list(rows)), total=int(total), limit=page.limit, offset=page.offset)
 
 
 @router.get("/{job_id}", response_model=JobOut, summary="One job")
 def get_job(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> JobOut:
-    return _out(_job(db, job_id))
+    return _enrich(db, [_job(db, job_id)])[0]
 
 
 # ------------------------------------------------------------------ run stages in the background

@@ -20,13 +20,18 @@ export default defineConfig({
     target: "es2022",
     sourcemap: false,
     cssCodeSplit: true,
+    // ECharts is the one big dependency; it is its own chunk, loaded when a dashboard is first opened.
+    chunkSizeWarningLimit: 650,
     rollupOptions: {
       output: {
         // Long lived libraries get chunks of their own so that a change to a page does not invalidate them in the browser cache.
         manualChunks(id: string) {
           if (!id.includes("node_modules")) return undefined;
           if (/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id)) return "react";
-          if (id.includes("@tanstack")) return "query";
+          // Only the data fetching library is pinned to a chunk; the table library, menus and popovers are used by console pages alone and are left to the
+          // automatic splitting, which puts them in chunks that the public site never loads.
+          if (/node_modules\/@tanstack\/(react-query|query-core)\//.test(id)) return "query";
+          if (/node_modules\/@radix-ui\/react-(dropdown-menu|popover|menu|popper)\//.test(id)) return undefined;
           if (id.includes("@radix-ui")) return "radix";
           return undefined;
         },

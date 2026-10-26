@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from "react-router-dom";
-import { ConsoleEntry, ProtectedRoute } from "@/app/ConsoleEntry";
+import { ProtectedRoute, RoleGate } from "@/app/ProtectedRoute";
+import { ConsoleLayout } from "@/console/shell/ConsoleLayout";
 import { Container } from "@/components/layout";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,6 +26,21 @@ const Contact = lazy(() => import("@/site/pages/Contact").then((m) => ({ default
 const Demo = lazy(() => import("@/site/pages/Contact").then((m) => ({ default: m.Demo })));
 const Privacy = lazy(() => import("@/site/pages/Legal").then((m) => ({ default: m.Privacy })));
 const Terms = lazy(() => import("@/site/pages/Legal").then((m) => ({ default: m.Terms })));
+
+// The console pages are chunks of their own too, so signing in does not download the charts and the wizard before they are needed.
+const Overview = lazy(() => import("@/console/pages/Overview"));
+const Migrations = lazy(() => import("@/console/pages/Migrations"));
+const MigrationWizard = lazy(() => import("@/console/wizard/MigrationWizard"));
+const Schemas = lazy(() => import("@/console/pages/Schemas"));
+const MemoryPage = lazy(() => import("@/console/pages/MappingMemory"));
+const Analytics = lazy(() => import("@/console/pages/Analytics"));
+const Revenue = lazy(() => import("@/console/pages/Revenue"));
+const Billing = lazy(() => import("@/console/pages/Billing"));
+const InvoicePage = lazy(() => import("@/console/pages/InvoicePage"));
+const Team = lazy(() => import("@/console/pages/Team"));
+const AuditLog = lazy(() => import("@/console/pages/AuditLog"));
+const SettingsPage = lazy(() => import("@/console/pages/Settings"));
+const ConsoleNotFound = lazy(() => import("@/console/pages/ConsoleNotFound"));
 
 /** Reserves the space of a page while its chunk loads, so the footer does not jump. */
 function PageFallback() {
@@ -64,7 +80,37 @@ export const routes: RouteObject[] = [
     ],
   },
   { path: "login", element: page(<Login />) },
-  { path: "app", element: <ProtectedRoute />, children: [{ index: true, element: <Navigate to="/app/overview" replace /> }, { path: "*", element: <ConsoleEntry /> }] },
+  {
+    path: "app",
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <ConsoleLayout />,
+        children: [
+          { index: true, element: <Navigate to="/app/overview" replace /> },
+          {
+            element: <RoleGate />,
+            children: [
+              { path: "overview", element: <Overview /> },
+              { path: "migrations", element: <Migrations /> },
+              { path: "migrations/new", element: <MigrationWizard /> },
+              { path: "migrations/:jobId", element: <MigrationWizard /> },
+              { path: "schemas", element: <Schemas /> },
+              { path: "memory", element: <MemoryPage /> },
+              { path: "analytics", element: <Analytics /> },
+              { path: "revenue", element: <Revenue /> },
+              { path: "billing", element: <Billing /> },
+              { path: "billing/invoices/:invoiceId", element: <InvoicePage /> },
+              { path: "team", element: <Team /> },
+              { path: "audit", element: <AuditLog /> },
+              { path: "settings", element: <SettingsPage /> },
+              { path: "*", element: <ConsoleNotFound /> },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 export function createRouter() {
