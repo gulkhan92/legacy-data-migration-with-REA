@@ -44,7 +44,7 @@ class LeadIn(BaseModel):
     email: str = Field(max_length=320)
     company: str | None = Field(None, max_length=200)
     message: str | None = Field(None, max_length=4000)
-    kind: Literal["contact", "demo"] = "contact"
+    kind: Literal["contact", "demo", "newsletter"] = "contact"
     website: str | None = Field(None, max_length=200, description="Leave empty. A field for bots: a filled one is dropped silently")
 
     @field_validator("email")

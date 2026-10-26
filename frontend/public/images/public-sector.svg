@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400" role="img" aria-label="Illustration: a building with columns and a stack of documents">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1F3A"/><stop offset="1" stop-color="#0E5560"/></linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#bg)"/>
+  <circle cx="70" cy="330" r="150" fill="#0F62FE" opacity=".26"/>
+  <circle cx="580" cy="50" r="130" fill="#00A3A3" opacity=".26"/>
+  <path d="M90 150L250 70l160 80z" fill="#FFFFFF"/>
+  <rect x="104" y="156" width="292" height="14" rx="4" fill="#FFFFFF"/>
+  <g fill="#FFFFFF"><rect x="122" y="176" width="26" height="120" rx="4"/><rect x="176" y="176" width="26" height="120" rx="4"/><rect x="230" y="176" width="26" height="120" rx="4"/><rect x="284" y="176" width="26" height="120" rx="4"/><rect x="338" y="176" width="26" height="120" rx="4"/></g>
+  <rect x="86" y="300" width="328" height="16" rx="5" fill="#FFFFFF"/><rect x="70" y="320" width="360" height="18" rx="5" fill="#FFFFFF" opacity=".9"/>
+  <circle cx="250" cy="122" r="12" fill="#0F62FE"/>
+  <g transform="translate(446 130)">
+    <rect width="130" height="170" rx="12" fill="#FFFFFF" opacity=".5" transform="rotate(8 65 85)"/>
+    <rect width="130" height="170" rx="12" fill="#FFFFFF" opacity=".75" transform="rotate(-3 65 85)"/>
+    <rect width="130" height="170" rx="12" fill="#FFFFFF"/>
+    <g fill="#0B1F3A" opacity=".25"><rect x="20" y="28" width="90" height="10" rx="5"/><rect x="20" y="52" width="70" height="10" rx="5"/><rect x="20" y="76" width="84" height="10" rx="5"/><rect x="20" y="100" width="60" height="10" rx="5"/></g>
+    <rect x="20" y="128" width="50" height="22" rx="11" fill="#00A3A3"/><rect x="78" y="128" width="32" height="22" rx="11" fill="#0F62FE"/>
+  </g>
+</svg>

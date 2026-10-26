@@ -1,0 +1,139 @@
+@import "@fontsource-variable/inter/index.css";
+@import "./tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* A fallback face with Inter's metrics, so the text does not move when the web font arrives (no layout shift). */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  size-adjust: 107.64%;
+  ascent-override: 90.49%;
+  descent-override: 22.56%;
+  line-gap-override: 0%;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header-height) + 16px);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background font-sans text-base text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-foreground;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  a {
+    @apply text-primary;
+  }
+  /* One focus style everywhere, visible on light and dark surfaces. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  ::selection {
+    background: rgb(var(--primary) / 0.2);
+  }
+  /* Respect people who ask for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* A grid without explicit columns has one column that may shrink. Without this the single implicit column is as wide as its widest
+     content, which pushes a phone layout wider than the screen. Any grid-cols-* utility still overrides it. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* The prose used by articles, legal pages and the documentation viewer. */
+  .prose-site {
+    @apply max-w-prose text-base text-foreground-muted;
+  }
+  .prose-site h2 {
+    @apply mb-3 mt-10 text-2xl font-semibold text-foreground;
+  }
+  .prose-site h3 {
+    @apply mb-2 mt-8 text-xl font-semibold text-foreground;
+  }
+  .prose-site h4 {
+    @apply mb-2 mt-6 text-lg font-semibold text-foreground;
+  }
+  .prose-site p {
+    @apply my-4;
+  }
+  .prose-site ul {
+    @apply my-4 list-disc space-y-1 pl-6;
+  }
+  .prose-site ol {
+    @apply my-4 list-decimal space-y-1 pl-6;
+  }
+  .prose-site a {
+    @apply underline underline-offset-2;
+  }
+  .prose-site strong {
+    @apply font-semibold text-foreground;
+  }
+  .prose-site code {
+    @apply rounded-sm bg-surface-muted px-1 py-0.5 font-mono text-[0.875em] text-foreground;
+  }
+  .prose-site pre {
+    @apply my-4 overflow-x-auto rounded-md border border-border bg-surface-muted p-4 text-sm;
+  }
+  .prose-site pre code {
+    @apply bg-transparent p-0;
+  }
+  .prose-site blockquote {
+    @apply my-4 border-l-4 border-teal pl-4 italic;
+  }
+  .prose-site .table-scroll {
+    @apply my-6 w-full overflow-x-auto;
+  }
+  .prose-site table {
+    @apply w-full text-sm;
+  }
+  .prose-site th {
+    @apply border-b border-border-strong px-3 py-2 text-left font-semibold text-foreground;
+  }
+  .prose-site td {
+    @apply border-b border-border px-3 py-2 align-top;
+  }
+  .prose-wide {
+    @apply max-w-none;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* A fixed aspect ratio for media so that nothing moves when it loads. */
+  .media-16x9 {
+    aspect-ratio: 16 / 9;
+  }
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+  }
+}

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400" role="img" aria-label="Illustration: a bar chart, a ledger and coins">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1F3A"/><stop offset="1" stop-color="#14337A"/></linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#bg)"/>
+  <circle cx="530" cy="60" r="160" fill="#0F62FE" opacity=".25"/>
+  <circle cx="80" cy="340" r="130" fill="#00A3A3" opacity=".22"/>
+  <rect x="70" y="60" width="330" height="280" rx="18" fill="#FFFFFF"/>
+  <g fill="#0B1F3A" opacity=".12"><rect x="96" y="96" width="278" height="2"/><rect x="96" y="150" width="278" height="2"/><rect x="96" y="204" width="278" height="2"/><rect x="96" y="258" width="278" height="2"/></g>
+  <rect x="112" y="210" width="38" height="68" rx="6" fill="#0F62FE" opacity=".5"/><rect x="170" y="170" width="38" height="108" rx="6" fill="#0F62FE" opacity=".7"/>
+  <rect x="228" y="136" width="38" height="142" rx="6" fill="#0F62FE"/><rect x="286" y="110" width="38" height="168" rx="6" fill="#00A3A3"/>
+  <rect x="340" y="190" width="24" height="88" rx="6" fill="#00A3A3" opacity=".5"/>
+  <path d="M112 204l58-36 58-32 58-26" fill="none" stroke="#0B1F3A" stroke-width="3" stroke-dasharray="6 6" stroke-linecap="round"/>
+  <rect x="96" y="296" width="150" height="10" rx="5" fill="#0B1F3A" opacity=".25"/>
+  <rect x="420" y="120" width="160" height="210" rx="16" fill="#FFFFFF" opacity=".96"/>
+  <g fill="#0B1F3A" opacity=".22"><rect x="440" y="146" width="90" height="10" rx="5"/><rect x="440" y="170" width="120" height="10" rx="5"/><rect x="440" y="194" width="104" height="10" rx="5"/><rect x="440" y="218" width="120" height="10" rx="5"/></g>
+  <rect x="440" y="250" width="120" height="2" fill="#0B1F3A" opacity=".6"/>
+  <rect x="440" y="266" width="70" height="14" rx="7" fill="#0F62FE"/><rect x="520" y="266" width="40" height="14" rx="7" fill="#00A3A3"/>
+  <g><circle cx="470" cy="352" r="26" fill="#00A3A3"/><circle cx="470" cy="352" r="16" fill="none" stroke="#fff" stroke-width="3" opacity=".8"/><circle cx="520" cy="360" r="22" fill="#FFFFFF" opacity=".9"/><circle cx="520" cy="360" r="13" fill="none" stroke="#0F62FE" stroke-width="3"/></g>
+</svg>

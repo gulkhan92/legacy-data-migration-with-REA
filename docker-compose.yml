@@ -1,5 +1,5 @@
 # Services: db and redis always; the api and the worker with `docker compose --profile app up`; the REA runner with
-# `--profile rea`. The frontend is added in a later phase.
+# `--profile rea`.
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -59,6 +59,22 @@ services:
     depends_on:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
+
+  # The site and the console, served by nginx, which also forwards /api to the api service. Open http://localhost:8080
+  frontend:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
 
   # Schedules the nightly metrics snapshot and the monthly invoice run. Exactly one instance should run.
   beat:

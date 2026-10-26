@@ -657,3 +657,82 @@ Revenue spans organizations and Row Level Security rightly keeps one organizatio
 - Dollar amounts are USD cents; there is no tax, currency conversion or credit note.
 - Revenue and customer rows are readable by any organization's admin, since there is no platform operator role yet; this is why live customers are masked.
 - The nightly and monthly jobs need `celery beat` running (exactly one instance).
+
+## Frontend foundation and public site (Phase 11)
+
+The site is a React single page application in `frontend/`. It is the public face of the project (home, platform, solutions, pricing, security, resources, company, contact, legal) and the sign in page; the console behind the sign in is built in the next phase.
+
+### Stack and layout
+
+React 18, TypeScript (strict), Vite, Tailwind CSS 3, Radix UI primitives with shadcn style components written into `src/components/ui`, TanStack Query, React Router, React Hook Form with Zod, Lucide icons, Inter self hosted through `@fontsource-variable/inter`. Vitest and Testing Library for components, Playwright (with axe) for the browser. The plan also lists ECharts, TanStack Table and Framer Motion: none is needed by the public site, so none is installed yet (they arrive with the console; the count up of the metric band is twelve lines of code and respects reduced motion).
+
+```
+frontend/
+  src/styles/        tokens.css (the one token file), globals.css
+  src/components/    ui/ (button, input, field, badge, card, accordion, tabs, sheet, navigation menu, skeleton), layout, header, footer, forms, pricing, sections, diagrams, product preview
+  src/site/          pages/ and content/ (the text of the site, as typed data)
+  src/app/           the sign in guard and the console entry page
+  src/lib/           api client, auth, formatting, page metadata, count up, page loading
+  e2e/               Playwright tests, helpers and a mock of the API
+  scripts/           build-docs, build-images, lighthouse, serve-dist, screens, overflow
+  public/            icons, social image, manifest, robots, sitemap, images/ (original SVG) and ATTRIBUTION.md
+```
+
+### Design system (`src/styles/tokens.css`)
+
+One file defines every color (space separated RGB channels, so Tailwind can apply opacity), radius, shadow, the type scale (fluid between 360 and 1280 px), the content width (1280 px) and the header height; `tailwind.config.ts` reads those variables and components contain no raw value. Palette: navy `#0B1F3A`, primary blue `#0F62FE`, teal `#00A3A3`, neutral grays, success, warning and error. The teal is decoration only: the text teal is darker, and `primary-ink` is the blue used for text on a pale blue surface, because the plain blue reaches only 4.4:1 there (the automated audit found it). Spacing follows the 8 point grid of Tailwind's scale, layout uses a 12 column grid. A `.dark` theme is defined for the console; the public site is always light.
+
+### Layout
+
+A top utility bar (Contact, Documentation, Status); a sticky header with mega menus (Platform, Solutions, Resources, Company, and Pricing as a link), a `Sign in` link and an `Open console` button that both lead to `/login`; a mobile drawer (Radix Dialog: focus is trapped, Escape closes it and focus returns to the button). The header condenses on scroll (a smaller mark, a shadow, a translucent background) without changing its height, so nothing below it ever moves. The footer has five link columns, a one field form that stores a lead of the kind `newsletter`, the legal links, a language and region label and the demonstration notice.
+
+### Pages and where their text comes from
+
+Home (hero with an illustration of the console, six capability cards, the metric band, how it works, five industry tiles, a product tour, a security summary, three sample scenarios, the FAQ, a closing call to action), Platform (the six stages in depth, supported sources, architecture figure), Solutions (an index and one page per industry), Pricing (plan cards from the API, comparison table, cost calculator), Security, Resources (documentation viewer, API reference link, three articles), Company, Contact, Request a demo, Privacy and Terms (labelled as samples), Status, Login, and a 404.
+
+The text lives in `src/site/content/*.ts` as typed data, and a test (`content.test.ts`) keeps it honest: every navigation, footer and content link must match a real route, no long dash anywhere, no certification claimed, unique ids, and a measured outcome allowed only on the two industries that have a sample system (healthcare and retail). The other three industry pages say "no sample system yet: no figures claimed" and describe what would be verified. Numbers that appear on the site (94.7 percent of columns mapped without a model, 6,338 rows into 5,515 loaded and 823 quarantined, quality 91.3 to 99.5, 25,900 records into 20,662 and 5,238) are the ones measured on the samples and documented above; the mapping confidences and values in the illustrations are the real output of the mapping step on the commerce sample, and the field layout is the one recovered from the clinic application.
+
+### Data from the API
+
+The metric band reads `GET /api/v1/public/metrics`, the plan cards `GET /public/plans`, the calculator `GET /public/pricing/estimate` (so the prices come from the same function that prices invoices), and the forms `POST /public/leads`. Every one has a loading state of fixed size, an error state, and where it makes sense a retry. The forms validate with Zod before they send, map a rate limit and a server failure to plain sentences, keep what was typed when a send fails, and carry a hidden field for bots that is never announced to screen readers. All figures from the demo environment are labelled as such.
+
+### Signing in
+
+`/login` posts to `/auth/login`, explains a wrong password (and the lockout), a rate limit and a network failure, and sends the person to the page they came from (`?next=`, accepted only when it is a path on this site) or to the entry page of their role. The console routes (`/app/*`) are guarded: a signed out person is sent to the sign in page with `next` set, and the server remains the authority. The session cookie cannot be read by scripts, so the site keeps a hint in local storage (set at sign in, cleared at sign out) and only asks the server who is signed in when the hint is set or on a console route; a visitor therefore makes no failing request on a public page.
+
+### Documentation viewer
+
+`scripts/build-docs.mjs` renders `docs/architecture.md` and `docs/security.md` to HTML at build time (it refuses a long dash or any active content), numbers the headings for a table of contents, and makes scrollable tables and code blocks reachable with the keyboard. The viewer loads that file only when opened, so the documents cost nothing on other pages.
+
+### Imagery
+
+Every image is original: hand drawn SVG illustrations for the industries and the diagrams, an SVG mark and social image rendered to PNG by `scripts/build-images.mjs`. No photograph is used. The plan allows Unsplash or Pexels photography, but each photograph needs its photographer, source and license verified by a person who has seen it, and that record cannot be made honestly without doing so; `public/images/ATTRIBUTION.md` says so and says where photographs would go. The product images on the home page are illustrations built with the real design system and labelled as illustrations. `scripts/capture_screenshots.ts` (Playwright) produces authentic screenshots of the running application as WebP; the console pages are added to it as the console is built.
+
+### Accessibility
+
+Targets WCAG 2.1 AA and is checked by tests, not by eye: axe runs on every public page at 1280 and 375 px, on each open mega menu, on the mobile drawer, on the FAQ, the tour and the calculator once used, and on the forms with their errors. It found real problems that were fixed: a label that pointed at a wrapper instead of its input (password field), duplicate accessible names, text contrast below 4.5:1 on two surfaces, an ARIA label on a paragraph, and scrollable regions the keyboard could not reach. There is a skip link, one visible focus style, keyboard operable menus, tabs and accordion, a live announcement of the new page title on every route change, alternative text or hidden decoration for every figure, and `prefers-reduced-motion` support. One rule is switched off for the open mega menus only: Radix renders a focus proxy that is `aria-hidden` and focusable by design, so that Tab moves into the menu (documented in `e2e/a11y.spec.ts`).
+
+### Performance and layout stability
+
+Home is in the main bundle, every other page is its own chunk, the libraries are split into long lived chunks, fonts are subsetted by unicode range with a fallback face that has Inter's metrics, and images carry explicit dimensions. Layout shift is designed out and measured: the footer stays hidden while a page placeholder is on screen (otherwise it jumps when the page arrives), a global rule gives grids a shrinkable default column (a long word in the footer had made the phone layout wider than the screen), and every data block reserves its size while loading.
+
+Measured with Lighthouse (desktop preset, `npm run lighthouse`, a production like server with gzip and long lived caching, ten pages): performance 99 to 100, accessibility 100, best practices 100, SEO 100 (the sign in page is `noindex` on purpose, so its SEO score is lower), cumulative layout shift 0 on every page. In the browser tests every page, at 360, 768, 1280 and 1920 px, has no horizontal overflow, one `h1`, its own title and description, and a layout shift score below 0.02 while loading and scrolling.
+
+### Tests
+
+- `npm test`: 83 Vitest tests (formatting, the API client and its errors, the calculator and price cards, the forms and their failures, sign in and the redirect target rules, the metric band and the count up, the header, menus and drawer, and the content integrity checks).
+- `npm run e2e`: 219 Playwright tests against the built site (page by page health, widths, layout shift; every link on every page including the mega menus and every anchor; axe; keyboard use, sticky header, drawer, calculator, forms stored by the server, bot trap, sign in, sign out, guarded console, documentation viewer, reduced motion). They run against the real API when it is up. When it is not (no Docker, CI), `node e2e/mock-api.mjs` stands in for the public and sign in endpoints with the same contract, and `E2E_MOCK_API_URL` tells the tests where it is; the sign in tests need `E2E_PASSWORD` (the password of the demo users) and, against the real API, the five a minute sign in limit means running them once a minute.
+- `npm run lint` and `npm run typecheck`; the lint also rejects the long dash character anywhere in the frontend.
+
+### Deployment
+
+`frontend/Dockerfile` builds the site and serves it with nginx (non root, read only, no capabilities, `docker compose --profile app up`, then http://localhost:8080). `nginx.conf` serves the static files with a year of caching for hashed assets and revalidation for the page shell, falls back to `index.html` for client side routes, and forwards `/api`, `/health`, `/docs` and `/openapi.json` to the API. The pages carry a strict Content-Security-Policy (scripts, styles, fonts, images and connections only from the site itself, no framing, no plugins), `nosniff`, `X-Frame-Options`, a referrer policy and a permissions policy. The browser tests run against a server that reads those exact headers from `nginx.conf`, so a violation would be a console error and fail a test. The container build itself was not exercised in the environment this phase was developed in (Docker was not available), so it is untested.
+
+### Limits
+
+- A client side application cannot give every page its own title, description and social preview to crawlers that do not run scripts: the title, description and canonical address are set by the page (and read by search engines that render), while the shell carries defaults. Pre rendering the public pages is the way to close this if it matters.
+- An address that does not exist shows the not found page with HTTP status 200, as every single page application does.
+- The social image and canonical addresses use the placeholder domain `legacylift.example` until the site has a real one.
+- There are no photographs and no screenshots of the console yet (see Imagery). The console, its charts and its tables are Phase 12.
+- Sign in needs the API: the site cannot show the console, only the entry page that names the signed in person and role.
+- The whole end to end suite was run against the mock API. The page, layout and link tests also ran against the live API (with the seeded demo history) earlier in the phase; the accessibility and interaction suites, including the leads stored by the real database and the real sign in, have not yet run against the live API (the database was not available at the end of the phase), and should before a release.

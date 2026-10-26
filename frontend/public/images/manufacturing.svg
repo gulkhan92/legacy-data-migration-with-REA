@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400" role="img" aria-label="Illustration: gears and a conveyor belt carrying parts">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1F3A"/><stop offset="1" stop-color="#1B3A6B"/></linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#bg)"/>
+  <circle cx="560" cy="330" r="150" fill="#00A3A3" opacity=".22"/>
+  <circle cx="90" cy="60" r="140" fill="#0F62FE" opacity=".28"/>
+  <g transform="translate(190 140)">
+    <circle r="78" fill="#FFFFFF"/>
+    <g fill="#FFFFFF"><rect x="-14" y="-102" width="28" height="30" rx="5"/><rect x="-14" y="72" width="28" height="30" rx="5"/><rect x="-102" y="-14" width="30" height="28" rx="5"/><rect x="72" y="-14" width="30" height="28" rx="5"/>
+    <rect x="-14" y="-102" width="28" height="30" rx="5" transform="rotate(45)"/><rect x="-14" y="72" width="28" height="30" rx="5" transform="rotate(45)"/><rect x="-102" y="-14" width="30" height="28" rx="5" transform="rotate(45)"/><rect x="72" y="-14" width="30" height="28" rx="5" transform="rotate(45)"/></g>
+    <circle r="32" fill="#0F62FE"/><circle r="12" fill="#FFFFFF"/>
+  </g>
+  <g transform="translate(340 96)">
+    <circle r="50" fill="#00A3A3"/>
+    <g fill="#00A3A3"><rect x="-10" y="-68" width="20" height="20" rx="4"/><rect x="-10" y="48" width="20" height="20" rx="4"/><rect x="-68" y="-10" width="20" height="20" rx="4"/><rect x="48" y="-10" width="20" height="20" rx="4"/>
+    <rect x="-10" y="-68" width="20" height="20" rx="4" transform="rotate(45)"/><rect x="-10" y="48" width="20" height="20" rx="4" transform="rotate(45)"/><rect x="-68" y="-10" width="20" height="20" rx="4" transform="rotate(45)"/><rect x="48" y="-10" width="20" height="20" rx="4" transform="rotate(45)"/></g>
+    <circle r="20" fill="#0B1F3A"/><circle r="7" fill="#FFFFFF"/>
+  </g>
+  <rect x="50" y="300" width="540" height="34" rx="17" fill="#FFFFFF" opacity=".92"/>
+  <g fill="#0B1F3A" opacity=".25"><circle cx="84" cy="317" r="8"/><circle cx="160" cy="317" r="8"/><circle cx="236" cy="317" r="8"/><circle cx="312" cy="317" r="8"/><circle cx="388" cy="317" r="8"/><circle cx="464" cy="317" r="8"/><circle cx="540" cy="317" r="8"/></g>
+  <rect x="110" y="258" width="58" height="42" rx="6" fill="#0F62FE"/><rect x="250" y="268" width="46" height="32" rx="6" fill="#00A3A3"/><rect x="400" y="252" width="66" height="48" rx="6" fill="#FFFFFF"/><rect x="500" y="272" width="42" height="28" rx="6" fill="#0F62FE" opacity=".8"/>
+</svg>

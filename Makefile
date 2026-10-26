@@ -23,3 +23,19 @@ worker:
 .PHONY: seed-billing
 seed-billing:
 	cd backend && uv run python -m app.billing.cli history --reset
+
+# Frontend (Phase 11). Needs Node 22 or newer.
+.PHONY: frontend-install frontend-dev frontend-check frontend-e2e
+frontend-install:
+	cd frontend && npm ci
+
+frontend-dev:
+	cd frontend && npm run dev
+
+# Lint, typecheck, unit tests and build.
+frontend-check:
+	cd frontend && npm run lint && npm run typecheck && npm test && npm run build
+
+# Browser tests against the built site (start the API, or the mock, first: see frontend/README.md).
+frontend-e2e:
+	cd frontend && npm run build && npx playwright test

@@ -108,6 +108,15 @@ organization admins read only their own organization's entries.
 - CSV exports neutralise spreadsheet formulas in text cells and are served as attachments with `nosniff`.
 - The simulated history is written only by an operator command with the table owner's credentials; there is no HTTP route that creates organizations, invoices or snapshots.
 
+## The site
+
+- The pages are served with a strict Content-Security-Policy (scripts, styles, fonts, images and connections only from the site itself, no framing, no plugins, no inline script), `X-Content-Type-Options`, `X-Frame-Options`, a referrer policy and a permissions policy that turns off camera, microphone, location and payment. The browser tests run against a server that reads these headers from `frontend/nginx.conf`, so a violation is a failing test.
+- The site loads nothing from another origin: fonts and images are its own, there are no analytics or advertising scripts and no tracking cookies.
+- The session cookies are not readable by scripts. The site keeps only a flag in local storage that says a session may exist (never a token), and the server decides.
+- The address a person returns to after signing in is accepted only when it is a path on this site, so a crafted link cannot send a signed in person elsewhere.
+- The documentation viewer renders documents from this repository at build time; the build refuses active content. Nothing a visitor submits is ever rendered as HTML.
+- The contact, demo and newsletter forms send only what was typed, with the CSRF header, are rate limited by the API, and carry a trap field for bots.
+
 ## Known limits
 
 - Access tokens are stateless and remain valid until they expire (15 minutes) after logout.
@@ -117,3 +126,4 @@ organization admins read only their own organization's entries.
 - Access tokens of a removed user stay valid until they expire; their refresh tokens are revoked at once.
 - A running job stage cannot be interrupted, only the stages after it.
 - Revenue views are open to any organization admin (with live customers masked) until a platform operator role exists.
+- The frontend container image was not built in the environment where it was written, so its nginx configuration is tested through an equivalent Node server and not through nginx itself.

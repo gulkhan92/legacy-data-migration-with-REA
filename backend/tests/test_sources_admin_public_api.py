@@ -195,6 +195,8 @@ def test_leads_are_stored_and_only_admins_read_them(client, api_users) -> None: 
     marker = uuid.uuid4().hex[:8]
     sent = client.post("/api/v1/public/leads", json={"name": "Grace", "email": f"grace-{marker}@example.com", "company": "Example", "message": "Demo please", "kind": "demo"})
     assert sent.status_code == 201 and sent.json() == {"received": True}
+    news = client.post("/api/v1/public/leads", json={"email": f"news-{marker}@example.com", "kind": "newsletter"})
+    assert news.status_code == 201  # the footer field of the public site
     spam = client.post("/api/v1/public/leads", json={"email": f"bot-{marker}@example.com", "website": "http://spam.example"})
     assert spam.status_code == 201  # the bot is told it worked
     assert client.post("/api/v1/public/leads", json={"email": "nope"}).status_code == 422
@@ -208,6 +210,7 @@ def test_leads_are_stored_and_only_admins_read_them(client, api_users) -> None: 
     as_(client, "admin@acme.test")
     leads = client.get("/api/v1/admin/leads?kind=demo&limit=200").json()
     assert f"grace-{marker}@example.com" in {l["email"] for l in leads["items"]}
+    assert f"news-{marker}@example.com" in {l["email"] for l in client.get("/api/v1/admin/leads?kind=newsletter&limit=200").json()["items"]}
     assert f"bot-{marker}@example.com" not in {l["email"] for l in client.get("/api/v1/admin/leads?limit=200").json()["items"]}
 
 
