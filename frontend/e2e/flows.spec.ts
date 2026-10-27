@@ -264,7 +264,8 @@ test.describe("sign in", () => {
     await expect(page).toHaveURL(/\/login\?next=%2Fapp%2Fbilling$/);
     await signIn(page, users.viewer, password as string);
     await expect(page).toHaveURL(/\/app\/billing$/);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Welcome, Demo Viewer");
+    await expect(page.getByRole("heading", { level: 1, name: "Billing" })).toBeVisible();
+    await page.getByRole("button", { name: "Account menu for Demo Viewer" }).click();
     await expect(page.getByText("viewer", { exact: true })).toBeVisible();
   });
 
@@ -273,8 +274,9 @@ test.describe("sign in", () => {
     await settle(page);
     await signIn(page, users.analyst, password as string);
     await expect(page).toHaveURL(/\/app\/migrations$/);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Welcome");
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Migrations" })).toBeVisible();
+    await page.getByRole("button", { name: "Account menu for Demo Analyst" }).click();
+    await page.getByRole("menuitem", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/$/);
     await page.goto("/app/overview");
     await expect(page).toHaveURL(/\/login\?next=/);
@@ -289,7 +291,8 @@ test.describe("sign in", () => {
     await expect(page.getByRole("link", { name: /Open console/ }).first()).toHaveAttribute("href", "/app/overview");
     await expect(page.locator("header").getByRole("link", { name: /^Sign in$/ })).toHaveCount(0);
     await page.goto("/app/overview");
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.getByRole("button", { name: "Account menu for Demo Admin" }).click();
+    await page.getByRole("menuitem", { name: "Sign out" }).click();
   });
 
   test("a next address that leaves the site is ignored", async ({ page }) => {

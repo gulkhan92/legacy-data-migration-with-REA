@@ -39,7 +39,11 @@ def require_role(*allowed: Role) -> Callable[[Principal], Principal]:
 
 
 def get_tenant_db(principal: Principal = Depends(get_principal)) -> Iterator[Session]:
-    """A session whose every transaction runs with app.org_id set to the caller's organization."""
+    """A session whose every transaction runs with app.org_id set to the caller's organization.
+
+    Routes ask for it with `Depends(get_tenant_db, scope="function")`: the session is then committed and closed as soon as the route function
+    returns, before the response is sent. With the default scope the commit would come after the response had gone out, and a client that reads
+    right after a write (a page that reloads its list when a save succeeds) could still see the old data."""
     with scoped_session(
         org_id=principal.org_id, user_id=principal.user_id, factory=make_session_factory()
     ) as session:

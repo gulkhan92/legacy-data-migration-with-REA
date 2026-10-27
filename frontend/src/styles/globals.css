@@ -137,3 +137,13 @@
     }
   }
 }
+
+/*
+ * A table that scrolls sideways holds visually hidden text (the caption, the label of an actions column). That text is absolutely
+ * positioned, and an absolutely positioned box is only clipped by a scrolling ancestor when the ancestor is positioned too. Without
+ * this, a wide table on a phone makes the whole page scroll sideways.
+ */
+.overflow-x-auto,
+.overflow-auto {
+  position: relative;
+}

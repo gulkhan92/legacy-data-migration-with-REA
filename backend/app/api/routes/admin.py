@@ -93,7 +93,7 @@ def audit_log(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     _: Principal = Depends(require_role()),  # admin only
-    db: Session = Depends(get_tenant_db),
+    db: Session = Depends(get_tenant_db, scope="function"),
 ) -> list[AuditEntryOut]:
     """The total number of matching entries is in the `X-Total-Count` header."""
     stmt = select(AuditLog, User.full_name).outerjoin(User, User.id == AuditLog.user_id)
@@ -123,13 +123,13 @@ class RetentionIn(BaseModel):
 
 
 @router.get("/retention", summary="How long uploaded files are kept")
-def get_retention(principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def get_retention(principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     row = db.get(OrgSettings, principal.org_id)
     return {"retention_days": row.retention_days if row else 365, "applies_to": "The encrypted copy of an uploaded file. Migrated data, reports and the audit log are not touched."}
 
 
 @router.put("/retention", summary="Change how long uploaded files are kept (admin)")
-def put_retention(body: RetentionIn, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def put_retention(body: RetentionIn, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     row = db.get(OrgSettings, principal.org_id)
     previous = row.retention_days if row else 365
     if row is None:
@@ -144,7 +144,7 @@ def put_retention(body: RetentionIn, request: Request, principal: Principal = De
 @router.get("/users", response_model=Page[UserOut], summary="The users of the organization")
 def list_users(
     role: Role | None = None, q: str | None = Query(None, max_length=100, description="Part of the name or email"), page: PageParams = Depends(),
-    _: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db),
+    _: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function"),
 ) -> Page[UserOut]:
     stmt = select(User, Membership).join(Membership, Membership.user_id == User.id)
     if role:
@@ -158,7 +158,7 @@ def list_users(
 
 
 @router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED, summary="Add a user to the organization")
-def create_user(body: UserCreate, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> UserOut:
+def create_user(body: UserCreate, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")) -> UserOut:
     problems = validate_password(body.password, email=body.email)
     if problems:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="The password " + ", ".join(problems))
@@ -176,7 +176,7 @@ def create_user(body: UserCreate, request: Request, principal: Principal = Depen
 
 
 @router.patch("/users/{user_id}", response_model=UserOut, summary="Change the role of a user")
-def change_role(user_id: uuid.UUID, body: RoleChange, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> UserOut:
+def change_role(user_id: uuid.UUID, body: RoleChange, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")) -> UserOut:
     user, membership = _membership(db, user_id)
     if membership.role is Role.ADMIN and body.role is not Role.ADMIN and _admin_count(db) <= 1:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The organization needs at least one admin")
@@ -189,7 +189,7 @@ def change_role(user_id: uuid.UUID, body: RoleChange, request: Request, principa
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove a user from the organization")
-def remove_user(user_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> None:
+def remove_user(user_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")) -> None:
     """Removes the membership and ends the user's sessions in this organization. The person's account itself stays, they may belong to others."""
     if user_id == principal.user_id:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You cannot remove yourself")
@@ -202,7 +202,7 @@ def remove_user(user_id: uuid.UUID, request: Request, principal: Principal = Dep
 
 
 @router.get("/leads", response_model=Page[LeadOut], summary="Contact and demo requests from the public site")
-def list_leads(kind: str | None = Query(None, max_length=32), page: PageParams = Depends(), _: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> Page[LeadOut]:
+def list_leads(kind: str | None = Query(None, max_length=32), page: PageParams = Depends(), _: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")) -> Page[LeadOut]:
     stmt = select(Lead)
     if kind:
         stmt = stmt.where(Lead.kind == kind)

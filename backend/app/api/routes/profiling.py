@@ -49,7 +49,7 @@ def _run(db: Session, job: Job, principal: Principal, request: Request) -> Profi
 
 @router.post("/jobs/{job_id}/profile", response_model=ProfileSummary)
 def profile_job(
-    job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)
+    job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")
 ) -> ProfileSummary:
     job = db.get(Job, job_id)
     if job is None:
@@ -59,7 +59,7 @@ def profile_job(
 
 @router.post("/sources/{source_id}/profile", response_model=ProfileSummary, status_code=status.HTTP_201_CREATED)
 def profile_text_source(
-    source_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)
+    source_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")
 ) -> ProfileSummary:
     """Delimited text has no structure to discover, so it is profiled directly in a new job."""
     source = db.get(Source, source_id)
@@ -73,7 +73,7 @@ def profile_text_source(
 
 
 @router.get("/jobs/{job_id}/profile")
-def get_profile(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def get_profile(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     result = service.load_profile(db, job_id)
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This job has not been profiled")
@@ -88,7 +88,7 @@ def get_quality(
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     _: Principal = Depends(get_principal),
-    db: Session = Depends(get_tenant_db),
+    db: Session = Depends(get_tenant_db, scope="function"),
 ) -> dict[str, Any]:
     report = service.load_quality(db, job_id)
     if report is None:

@@ -109,7 +109,7 @@ def logout(request: Request, response: Response) -> Response:
 
 
 @router.get("/me", response_model=MeResponse)
-def me(principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> MeResponse:
+def me(principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> MeResponse:
     return _me(db, principal)
 
 

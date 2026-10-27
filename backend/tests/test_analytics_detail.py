@@ -203,3 +203,10 @@ def test_a_range_can_be_given_as_a_number_of_days_ending_at_the_latest_data(admi
     assert explicit["range"]["from"] == "2026-09-01"  # an explicit start wins
     assert admin.get("/api/v1/analytics/revenue", params={"days": 0}).status_code == 422
     assert admin.get("/api/v1/analytics/revenue", params={"days": 5000}).status_code == 422
+
+
+def test_the_csv_exports_honour_the_number_of_days(admin) -> None:  # type: ignore[no-untyped-def]
+    for kind in ("revenue", "operations"):
+        response = admin.get(f"/api/v1/analytics/{kind}.csv", params={"days": 7})
+        assert response.status_code == 200
+        assert len(response.text.strip().splitlines()) == 8  # the header and seven days

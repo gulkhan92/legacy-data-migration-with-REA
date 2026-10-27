@@ -726,13 +726,121 @@ Measured with Lighthouse (desktop preset, `npm run lighthouse`, a production lik
 
 ### Deployment
 
-`frontend/Dockerfile` builds the site and serves it with nginx (non root, read only, no capabilities, `docker compose --profile app up`, then http://localhost:8080). `nginx.conf` serves the static files with a year of caching for hashed assets and revalidation for the page shell, falls back to `index.html` for client side routes, and forwards `/api`, `/health`, `/docs` and `/openapi.json` to the API. The pages carry a strict Content-Security-Policy (scripts, styles, fonts, images and connections only from the site itself, no framing, no plugins), `nosniff`, `X-Frame-Options`, a referrer policy and a permissions policy. The browser tests run against a server that reads those exact headers from `nginx.conf`, so a violation would be a console error and fail a test. The container build itself was not exercised in the environment this phase was developed in (Docker was not available), so it is untested.
+`frontend/Dockerfile` builds the site and serves it with nginx (non root, read only, no capabilities, `docker compose --profile app up`, then http://localhost:8080). `nginx.conf` serves the static files with a year of caching for hashed assets and revalidation for the page shell, falls back to `index.html` for client side routes, and forwards `/api`, `/health`, `/docs` and `/openapi.json` to the API. The pages carry a strict Content-Security-Policy (scripts, styles, fonts, images and connections only from the site itself, no framing, no plugins), `nosniff`, `X-Frame-Options`, a referrer policy and a permissions policy. The browser tests run against a server that reads those exact headers from `nginx.conf`, so a violation would be a console error and fail a test. The image was built and run in Phase 13: it starts under the unprivileged user, serves the site and its headers, falls back to the page shell for client side routes, and passes the image scan (see Evaluation, testing and hardening).
 
 ### Limits
 
 - A client side application cannot give every page its own title, description and social preview to crawlers that do not run scripts: the title, description and canonical address are set by the page (and read by search engines that render), while the shell carries defaults. Pre rendering the public pages is the way to close this if it matters.
 - An address that does not exist shows the not found page with HTTP status 200, as every single page application does.
 - The social image and canonical addresses use the placeholder domain `legacylift.example` until the site has a real one.
-- There are no photographs and no screenshots of the console yet (see Imagery). The console, its charts and its tables are Phase 12.
-- Sign in needs the API: the site cannot show the console, only the entry page that names the signed in person and role.
-- The whole end to end suite was run against the mock API. The page, layout and link tests also ran against the live API (with the seeded demo history) earlier in the phase; the accessibility and interaction suites, including the leads stored by the real database and the real sign in, have not yet run against the live API (the database was not available at the end of the phase), and should before a release.
+- There are no photographs and no screenshots of the console yet (see Imagery); the console itself is described in the next section.
+- Sign in needs the API.
+- The suites were first run against the mock API; the whole suite, including the accessibility and interaction tests, the leads stored by the real database and the real sign in, now also runs against the live API (Phase 13).
+
+## The console (Phase 12)
+
+The signed in part of the application: `frontend/src/console/`, served under `/app`. Everything it shows comes from the API; there is no data in the frontend but what the API returns.
+
+### What the backend added for it
+
+- `GET /overview` (the organization's month: jobs, records, success rate, average duration, tokens, the previous month for comparison, jobs in progress, recent jobs), `GET /notifications` (what happened lately to the organization's jobs: finished, failed, rolled back, waiting for a person), `GET` and `DELETE /mapping-memory` (search, paging, forget one).
+- The job list carries the name and kind of the source and the name of the owner, and filters by status, kind, text, dates and owner, and sorts by any of them (`GET /jobs`).
+- `GET /auth/organizations` and `POST /auth/switch`: a person who belongs to several organizations lists them and switches; the list is read through a `SECURITY DEFINER` function because the application role can see only the organization of the request. Switching issues new tokens and is audited.
+- The audit log searches by action, person, entity or details and reports the number of matches in `X-Total-Count`. `GET` and `PUT /admin/retention` set how long the encrypted copy of an uploaded file is kept; a nightly task removes the copies past it.
+- The dry run answers with a cost summary (rows to load, tokens used against the budget, an estimated load time with its basis).
+- Analytics: `GET /analytics/operations/detail` (mapping methods, stage latency percentiles, quarantine reasons, failed stages, discovery confidence, model use, token savings), `GET /analytics/revenue/cohorts`, and a `days` parameter on every range endpoint ("the last N days up to the latest data", so a preset such as 30 days does not depend on the date of the client).
+
+### Layout, navigation and roles
+
+A collapsible sidebar (remembered), a top bar with the organization switcher, the command palette (Ctrl K or Command K: pages for the role, migrations found by name, switch theme, sign out), notifications (polled every 30 seconds, a count of what is newer than the last time the list was opened) and the user menu, breadcrumbs derived from the address, skeleton loaders that keep the size of what they stand for, empty states, an error boundary per page that clears when the route changes, and toasts (a polite status for success, an alert for errors). On a phone the sidebar is a sheet. A light and a dark theme: the choice is applied to the document root so that dialogs and menus, which render outside the page, follow it, and the console removes it when it closes because the public site is always light.
+
+Navigation and routes are defined once (`shell/nav.ts`) with the roles that may use each page: viewers read (overview, migrations, schemas, memory, billing); analysts also run migrations and read the operations analytics; administrators also see revenue, team, audit log and settings. A page a role may not open shows a plain explanation, and the server refuses the same requests (browser tests assert both).
+
+### The migration wizard
+
+Seven steps (`wizard/`). The address holds the job and the step (`/app/migrations/:id?step=mapping`), so a person can leave and come back to the same place. A step can be opened when the job has reached it or after it, never before (`furthestStep`; the dry run is started in its own step, so a job that is waiting for review can open it).
+
+1. **Source**: a sample system or an uploaded file (with the data file of a .NET application); the target schema follows the sample until the person chooses another. Creating the migration registers or uploads the source and creates the job.
+2. **Discovery**: runs `discover` and `profile`, shows the stages and the live events while it works, then every table and field with how it was found, its confidence and its details, personal data flagged, the quality score, and an evidence drawer with the raw output of REA for any field.
+3. **Mapping review**: runs `map` and `rules`, then a table of source column, suggested target, confidence bar (a meter, with the number beside it), method badge and state; accept, change through a searchable target picker (suggestions first), reject; approve everything at or above 85 percent confidence in one action, or the selected rows. Changing a mapping marks the rules stale, and they are generated again when the person continues.
+4. **Transform preview**: every rule with what it does to a sample, before and after side by side, the number and rate of failures; a rule that needs the meaning of codes shows an editor and blocks the way on until it is complete.
+5. **Dry run**: how many rows would load, which would be quarantined and why, the rules with failures, and the cost summary.
+6. **Execute and monitor**: a confirmation, the `load` stage in the background, the stage timeline with the time each stage took, the live events.
+7. **Reconciliation report**: counts, the quality gauge (before and after), the checks per table, the quarantined rows with a reason filter and CSV export, and rollback after a confirmation.
+
+Progress is read from the events of the job. The browser follows them with Server-Sent Events (`/jobs/{id}/events/stream`: the history first, then new events, an `end` event when the job finishes; a browser reconnects and resumes from the last event) and falls back to polling the list when the stream cannot be used. The state of a stage is derived from the messages the workers write (`Stage x started`, `Stage x finished`, and the messages of the dry run and load endpoints) by a pure function that is unit tested (`stageTimeline`).
+
+### The dashboards
+
+Two dashboards, drawn with ECharts (loaded only when a dashboard is first opened, as a chunk of its own, with the SVG renderer and only the chart types used): **Revenue** (administrators) and **Analytics** (analysts and administrators). Both have one row of controls above everything they scope: a range (30 days, 90 days, 12 months, 24 months, custom), the bucket (day, week, month), a comparison with the previous period of the same length, CSV export and print. The state is in the address.
+
+Chart rules, applied by shared builders (`charts/builders.ts`) and tested:
+
+- Eight categorical hues in a fixed order (`charts/palette.ts`). The order was checked with the validator of the data visualization method, on the surfaces the charts sit on: in the light theme the worst adjacent pair is 9.1 in colorblind simulation (target 8) and 19.6 for normal vision (floor 15); in the dark theme 8.4 and 19.3. A series takes its hue by identity, not by rank: a plan, a provider, a mapping method and a kind of MRR movement have the same color in every chart, and hiding a series does not repaint the others. Three light hues (aqua, yellow, magenta) are under 3:1 against white, which the method allows only with visible labels or a table: every chart has a legend, a tooltip and a table of the same numbers.
+- One axis per chart. The plan's "customer growth and ARPA trend on two axes" is two charts, because two scales on one plot invent a correlation; unit economics (revenue per 1,000 records, model tokens per 1,000 records) are two charts for the same reason.
+- Bars at most 24 px thick, rounded 4 px at the data end only, a 2 px gap of the surface color between stacked segments; lines 2 px; the last point of a line marked with a ring and labelled; areas a wash of 10 percent; hairline, solid gridlines; ink in text colors, never the series color; one tooltip that lists every series at the pointed period, built from escaped text.
+- Every chart has a legend whose entries are buttons that toggle a series (operable from the keyboard), a table of the same numbers behind a switch, and a text summary in words (the first and last value, the highest and lowest). The drawing itself is hidden from assistive technology, because the summary and the table carry the same information. While data is fetched again the previous drawing stays, dimmed.
+- Sequential data (cohort retention) uses one hue: light to dark on the light theme and dark to light on the dark theme, so that the low end recedes into the surface in both.
+- The MRR projection (a straight line through the last 12 months, continued six months, dashed, labelled "projection") is computed in the browser from the monthly series (`forecastLinear`), and the page says that it assumes nothing changes. The MRR movement chart has a waterfall form of the same numbers.
+- The latency chart shows the median and the 95th percentile side by side, because percentiles do not add up and so are not stacked. The token savings from memory are labelled as an estimate, with the formula that makes it.
+
+### Tests
+
+- Vitest: the wizard steps against a mocked API (every step, what blocks the way on, bulk approval, the override picker, the code map editor, the cost summary, the report and the confirmations), the stage timeline, the discovery tables, the chart transforms (forecast, waterfall, bins, cohorts, unit economics and others), the chart builders (the mark specifications), the palette, the date range state, navigation by role, the command palette filter, the error boundary, toasts and the organization switcher.
+- Playwright (`e2e/console.spec.ts`, against the real API, the real pipeline and the seeded history): each role signs in through the form; pages by role; the shell; the wizard from the first step to the report on both sample systems (with a rollback); both dashboards, their controls and their tables; billing, team, audit log, settings, schemas and memory; every console page in both themes under axe at WCAG 2.1 AA; no page overflows sideways at 360 and 768 px; no console error and no Content-Security-Policy violation.
+
+### Limits
+
+- Email invitations are not implemented: the Team page adds a person directly with a first password, and says so.
+- The organization switcher is tested against the API and in unit tests, not in a browser test, because the demo has one organization.
+- The projection is a straight line, not a forecast model. It says what the recent trend implies, nothing about churn or pricing.
+- The history behind both dashboards is simulated for demonstration, and the pages say so; the operations figures cover the whole platform, not one organization.
+- The console is not tested in browsers other than Chromium.
+
+## Evaluation, testing and hardening (Phase 13)
+
+### The evaluation
+
+`scripts/eval_run.py` (`make eval`) measures the platform on the two sample systems and writes [evaluation.md](evaluation.md) (and `evaluation.json`). Every figure in that document is produced by the run that wrote it. It has three parts:
+
+- **Scoring against the ground truth.** The fixtures are built with a known answer (`datasets/fixtures/*/ground_truth.json`); the platform never reads it, the harness does. Field discovery recall (the schema of the database, the layout of the binary file, and the layout of the same file without its program), recall of the injected defects by type, and the accuracy of the mapping by rules and embedding before any language model is asked.
+- **Two complete runs of each system through the API** in a new organization, the second after the first has taught the mapping memory: wall time of every stage, how each column was mapped, how many decisions a person had to take (a reviewer that knows the answer accepts, corrects or rejects, and the repeat run needs fewer), tokens and model calls by provider from `llm_calls`, and the reconciliation.
+- **The loaded data against the clean data.** What became of the row of every injected defect (quarantined with the expected reason, removed as a duplicate), and every loaded row compared field by field with the clean data the fixture was built from.
+
+What it does not do: the mapping accuracy after the language model is measured only when a provider key is configured; without one the document says it was not measured and gives the ceiling (what a model that always picks the right candidate could reach) labelled as an upper bound. Tokens, model calls and the effect of the cache are zero in a run without a key, and the document says that too.
+
+What it found, besides the figures: a harness that applied no meaning to the codes of the clinic file loaded the class of every encounter as a number, which the field comparison showed at once; the loaded rows differ from the clean data only in capitalization (the case rule treats unusual capitalization as a defect, so an acronym is changed too), and the six injected defects that are not quarantined are all in a source field that the clinic target schema has no column for.
+
+### Coverage and the tests
+
+`scripts/coverage_gate.py` fails when the line coverage of `pipeline` (discovery, profiling, mapping, transform, job orchestration and the scoring), `llm` or `core` is under 80 percent. The backend suite (930 tests, 5 skipped) gives 94 percent overall, 92.2 percent for the pipeline, 97.6 percent for `llm` and 97.7 percent for `core`. The router is tested against recorded provider responses (`backend/tests/recorded/llm`: the answers and the failures of both providers, replayed through the real clients), and no test reaches the network. The frontend has 207 Vitest tests (the wizard steps, the chart transforms and builders, the shell) and 275 Playwright tests (three of them only sign the demo roles in) browser tests.
+
+New tests of this phase: `test_log_hygiene.py` (what must never reach a log), `test_security_probes.py` (hostile input, privilege escalation, forged tokens, error bodies), `test_read_your_writes.py` (below), and the console browser tests.
+
+### Load sanity
+
+`scripts/load_check.py` (`make load-check`, [load-check.md](load-check.md)) migrates a synthetic delimited file of 50,000 and then of 200,000 rows through the API, with defects injected, and samples the memory of the process every 100 ms. It passes when the growth for the large file is under a set limit (700 MB) and is at most 2.5 times the growth for the small one, because the data is read, transformed and written in chunks: in the run documented there, 200,000 rows grew the process by 172 MB against 108 MB for 50,000 rows, and the load ran at about 6,100 rows a second.
+
+### Security pass
+
+[security-review.md](security-review.md) checks the platform against the chapters of OWASP ASVS 4.0.3, with the test that proves each control, and records the scans: dependencies of the three package sets, secrets in the tree and in every commit, Trivy on the files, the Dockerfiles and the three images, a review of the logs, and hostile input. No finding of high severity is open. The pass changed the code in four places:
+
+- **The commit came after the response.** The session of a request was committed when the dependency that yielded it was closed, which in this version of FastAPI is after the response has been sent. A client that read right after a write could read the old data, and a write could be acknowledged and then fail. The console found it (a mapping was overridden and the table that reloaded at once still showed the old target). Every route now declares the session with `scope="function"`, which closes it, and so commits, before the response is sent; a failed commit is an error response. A test checks the order of the commit and the first byte of the response, and that no route forgets the scope.
+- **A null character in a search box was a server error.** PostgreSQL refuses it; the API answered 500 and logged a stack trace. A value the database cannot store is now a 422 that does not echo the value.
+- **Dependencies and images.** `zod` and `react-router` were upgraded to fixed versions, `certifi` too; the REA runner needed an `overrides` entry because the pinned `rea-agents` asks for one exact `zod`; the base of the frontend image was stale; the runner image no longer carries npm; one Dockerfile did not declare its user.
+- **The Content-Security-Policy.** Radix dialogs and menus insert one inline style element (the scroll lock). It is allowed by its hash and nothing else inline is.
+
+### What the browser tests found
+
+The console tests ran for the first time against the real API and found, besides the commit order above, three defects that the unit tests could not: a step of the wizard that the person could never open (the dry run is started inside its own step, but the step was reachable only after a dry run had passed); a table that scrolls sideways made the whole page scroll sideways on a phone (visually hidden text inside it is positioned against the page unless the scroll container is positioned); and an accessible name that did not contain the visible text of the command palette button.
+
+### Continuous integration
+
+`.github/workflows/ci.yml`: the backend tests with the coverage gate, the browser tests against the whole stack, the frontend lint, types, tests and build, the scans (secrets with history, `pip-audit`, `npm audit`, Trivy on files), the three images built and scanned, and the load check on the main branch and weekly. The same steps were run by hand in the environment where this phase was done; the workflow itself has not run on GitHub.
+
+### Limits
+
+- The evaluation is two systems, built by the same builder that wrote the answer; it shows that the method works on them, not how it does on any legacy system. Its timings come from one machine and one process.
+- The language model, its accuracy and the effect of its cache are not measured here, because no provider key was configured. The harness measures them when there is one.
+- The load check measures a delimited file with one table; the memory of PostgreSQL is not in its figures.
+- The weekly and per-push scans find known advisories. They do not replace a review of new code, and a formal threat model is not part of the repository.

@@ -70,7 +70,7 @@ def _operations(db: Session, r: Range) -> dict[str, Any]:
 
 
 @router.get("/revenue", summary="Revenue: MRR, movements, revenue, retention (admin)")
-def revenue(r: Range = Depends(), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def revenue(r: Range = Depends(), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     """Series per bucket and KPIs for the range, the previous period and the change with `compare=true`, and `checks` that say whether the MRR movements add up
     and whether the revenue shown equals the invoices of the range."""
     return _revenue(db, r)
@@ -78,7 +78,7 @@ def revenue(r: Range = Depends(), _: Principal = Depends(admin_only), db: Sessio
 
 @router.get("/revenue/breakdown", summary="MRR and usage revenue by plan, industry or region (admin)")
 def revenue_breakdown(
-    dimension: str = Query("plan", pattern="^(plan|industry|region)$"), r: Range = Depends(), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)
+    dimension: str = Query("plan", pattern="^(plan|industry|region)$"), r: Range = Depends(), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function")
 ) -> dict[str, Any]:
     start, end = r.resolve(db)
     return _run("breakdown", {"d": dimension, "a": start, "b": end, "g": r.granularity}, lambda: analytics.breakdown_report(db, dimension, start, end, r.granularity))
@@ -87,7 +87,7 @@ def revenue_breakdown(
 @router.get("/customers/top", summary="The customers with the most revenue over the last 12 months (admin)")
 def customers_top(
     limit: int = Query(10, ge=1, le=50), as_of: date | None = Query(None, description="Default: the latest snapshot"),
-    _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db),
+    _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function"),
 ) -> dict[str, Any]:
     day = as_of or analytics.latest_date(db) or date.today()
     return _run("customers", {"d": day, "n": limit}, lambda: analytics.top_customers(db, day, limit))
@@ -97,25 +97,25 @@ def customers_top(
 def invoices(
     invoice_status: InvoiceStatus | None = Query(None, alias="status"), q: str | None = Query(None, max_length=100, description="Part of the customer name"),
     date_from: date | None = Query(None, alias="from", description="Invoices whose period ends on or after this day"), date_to: date | None = Query(None, alias="to"),
-    limit: int = Query(25, ge=1, le=200), offset: int = Query(0, ge=0), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db),
+    limit: int = Query(25, ge=1, le=200), offset: int = Query(0, ge=0), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function"),
 ) -> dict[str, Any]:
     params = {"s": invoice_status.value if invoice_status else None, "q": q, "a": date_from, "b": date_to, "l": limit, "o": offset}
     return _run("invoices", params, lambda: analytics.invoice_page(db, params["s"], q, date_from, date_to, limit, offset))
 
 
 @router.get("/operations", summary="Jobs, success rate, duration, tokens by provider, failovers, cache hits, quality (analyst and admin)")
-def operations(r: Range = Depends(), _: Principal = Depends(operations_roles), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def operations(r: Range = Depends(), _: Principal = Depends(operations_roles), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     return _operations(db, r)
 
 
 @router.get("/operations/detail", summary="Mapping methods, stage latency, errors, discovery confidence and model figures (analyst and admin)")
-def operations_detail(r: Range = Depends(), _: Principal = Depends(operations_roles), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def operations_detail(r: Range = Depends(), _: Principal = Depends(operations_roles), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     start, end = r.resolve(db)
     return _run("operations-detail", {"a": start, "b": end}, lambda: analytics.operations_detail(db, start, end))
 
 
 @router.get("/revenue/cohorts", summary="Retention of customers by the month they signed up (admin)")
-def revenue_cohorts(as_of: date | None = Query(None, description="Default: the latest snapshot"), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def revenue_cohorts(as_of: date | None = Query(None, description="Default: the latest snapshot"), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     day = as_of or analytics.latest_date(db) or date.today()
     return _run("cohorts", {"d": day}, lambda: analytics.cohort_retention(db, day))
 
@@ -141,21 +141,21 @@ def _csv(filename: str, columns: list[str], rows: list[dict[str, Any]]) -> Respo
 
 
 @router.get("/revenue.csv", summary="Revenue series as CSV (admin)", response_class=Response, responses={200: {"content": {"text/csv": {}}}})
-def revenue_csv(r: Range = Depends(), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)) -> Response:
-    report = _revenue(db, Range(r.date_from, r.date_to, r.granularity, False))
+def revenue_csv(r: Range = Depends(), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function")) -> Response:
+    report = _revenue(db, Range(r.date_from, r.date_to, r.granularity, False, r.days))
     return _csv(f"revenue-{report['range']['from']}-{report['range']['to']}-{r.granularity}.csv", ["period", *analytics.REVENUE_SERIES], report["series"])
 
 
 @router.get("/operations.csv", summary="Operations series as CSV (analyst and admin)", response_class=Response, responses={200: {"content": {"text/csv": {}}}})
-def operations_csv(r: Range = Depends(), _: Principal = Depends(operations_roles), db: Session = Depends(get_tenant_db)) -> Response:
-    report = _operations(db, Range(r.date_from, r.date_to, r.granularity, False))
+def operations_csv(r: Range = Depends(), _: Principal = Depends(operations_roles), db: Session = Depends(get_tenant_db, scope="function")) -> Response:
+    report = _operations(db, Range(r.date_from, r.date_to, r.granularity, False, r.days))
     return _csv(f"operations-{report['range']['from']}-{report['range']['to']}-{r.granularity}.csv", ["period", *analytics.OPERATIONS_SERIES], report["series"])
 
 
 @router.get("/invoices.csv", summary="Invoices as CSV (admin)", response_class=Response, responses={200: {"content": {"text/csv": {}}}})
 def invoices_csv(
     invoice_status: InvoiceStatus | None = Query(None, alias="status"), q: str | None = Query(None, max_length=100), date_from: date | None = Query(None, alias="from"),
-    date_to: date | None = Query(None, alias="to"), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db),
+    date_to: date | None = Query(None, alias="to"), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function"),
 ) -> Response:
     rows: list[dict[str, Any]] = []
     offset = 0

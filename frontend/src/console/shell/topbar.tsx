@@ -188,10 +188,12 @@ export function UserMenu() {
 export function PaletteButton({ onOpen }: { onOpen: () => void }) {
   const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   return (
-    <Button variant="outline" size="sm" onClick={onOpen} className="gap-2 text-foreground-muted" aria-label="Open the command palette" aria-keyshortcuts="Control+K Meta+K">
+    <Button variant="outline" size="sm" onClick={onOpen} className="gap-2 text-foreground-muted" aria-keyshortcuts="Control+K Meta+K">
       <Search className="h-4 w-4" aria-hidden="true" />
-      <span className="hidden sm:inline">Search or jump to</span>
-      <kbd className="hidden rounded border border-border-strong px-1.5 text-xs sm:inline">{mac ? "⌘K" : "Ctrl K"}</kbd>
+      <span className="sr-only sm:not-sr-only">Search or jump to</span>
+      <kbd aria-hidden="true" className="hidden rounded border border-border-strong px-1.5 text-xs sm:inline">
+        {mac ? "⌘K" : "Ctrl K"}
+      </kbd>
     </Button>
   );
 }

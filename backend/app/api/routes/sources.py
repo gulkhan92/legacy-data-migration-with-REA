@@ -32,7 +32,7 @@ def list_sources(
     limit: int = 50,
     offset: int = 0,
     _: Principal = Depends(get_principal),
-    db: Session = Depends(get_tenant_db),
+    db: Session = Depends(get_tenant_db, scope="function"),
 ) -> list[Source]:
     stmt = select(Source).order_by(Source.created_at.desc()).limit(min(limit, 200)).offset(max(offset, 0))
     return list(db.scalars(stmt))
@@ -44,7 +44,7 @@ def upload_source(
     request: Request,
     file: UploadFile = File(...),
     principal: Principal = Depends(require_role(Role.ANALYST)),
-    db: Session = Depends(get_tenant_db),
+    db: Session = Depends(get_tenant_db, scope="function"),
 ) -> Source:
     ip = client_ip(request)
     declared = request.headers.get("content-length")
@@ -138,7 +138,7 @@ def list_samples(_: Principal = Depends(get_principal)) -> list[SampleOut]:
 
 
 @router.post("/samples/{name}", response_model=SampleRegistered, status_code=status.HTTP_201_CREATED, summary="Add a sample system to the organization's sources")
-def register_sample(name: str, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> SampleRegistered:
+def register_sample(name: str, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> SampleRegistered:
     sample = SAMPLES.get(name)
     if sample is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown sample system")
@@ -168,7 +168,7 @@ def register_sample(name: str, request: Request, principal: Principal = Depends(
 
 
 @router.get("/{source_id}", response_model=SourceOut, summary="One source")
-def get_source(source_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> Source:
+def get_source(source_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> Source:
     source = db.get(Source, source_id)
     if source is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found")
@@ -176,7 +176,7 @@ def get_source(source_id: uuid.UUID, _: Principal = Depends(get_principal), db: 
 
 
 @router.delete("/{source_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a source and its stored file")
-def delete_source(source_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> None:
+def delete_source(source_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> None:
     source = db.get(Source, source_id)
     if source is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found")

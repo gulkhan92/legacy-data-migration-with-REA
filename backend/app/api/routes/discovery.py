@@ -51,7 +51,7 @@ def discover(
     request: Request,
     body: DiscoverRequest | None = None,
     principal: Principal = Depends(require_role(Role.ANALYST)),
-    db: Session = Depends(get_tenant_db),
+    db: Session = Depends(get_tenant_db, scope="function"),
 ) -> DiscoverResponse:
     source = db.get(Source, source_id)
     if source is None:
@@ -85,7 +85,7 @@ def discover(
 
 
 @router.get("/jobs/{job_id}/discovery")
-def get_discovery(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def get_discovery(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     result = service.load_result(db, job_id)
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No discovery result for this job")
@@ -97,7 +97,7 @@ def get_evidence(
     job_id: uuid.UUID,
     subject: str = Query(..., min_length=1, max_length=300, description="A field or column such as PATIENT.LastNm"),
     _: Principal = Depends(get_principal),
-    db: Session = Depends(get_tenant_db),
+    db: Session = Depends(get_tenant_db, scope="function"),
 ) -> list[DiscoveryEvidence]:
     if subject.startswith("command:"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Raw command output is not served here")

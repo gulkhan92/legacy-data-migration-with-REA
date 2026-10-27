@@ -1,0 +1,887 @@
+{
+  "environment": {
+    "date": "2026-10-27",
+    "python": "3.12.13",
+    "platform": "Windows 11",
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "rea": "6.7.0",
+    "llm": false
+  },
+  "scores": {
+    "commerce": {
+      "discovery": {
+        "recovered": 40,
+        "total": 40,
+        "recall": 1.0,
+        "missing": []
+      },
+      "defects": {
+        "injected": 590,
+        "detected": 590,
+        "recall": 1.0,
+        "core_recall": 1.0,
+        "by_type": {
+          "duplicate": {
+            "injected": 124,
+            "detected": 124,
+            "recall": 1.0,
+            "precision": 1.0
+          },
+          "invalid_date": {
+            "injected": 12,
+            "detected": 12,
+            "recall": 1.0,
+            "precision": 1.0
+          },
+          "mixed_case": {
+            "injected": 58,
+            "detected": 58,
+            "recall": 1.0,
+            "precision": 0.21481481481481482
+          },
+          "null_required": {
+            "injected": 186,
+            "detected": 186,
+            "recall": 1.0,
+            "precision": 0.9946524064171123
+          },
+          "orphan_fk": {
+            "injected": 26,
+            "detected": 26,
+            "recall": 1.0,
+            "precision": 1.0
+          },
+          "out_of_range": {
+            "injected": 123,
+            "detected": 123,
+            "recall": 1.0,
+            "precision": 1.0
+          },
+          "trailing_space": {
+            "injected": 61,
+            "detected": 61,
+            "recall": 1.0,
+            "precision": 0.8840579710144928
+          }
+        }
+      },
+      "mapping_before_llm": {
+        "columns": 32,
+        "correct": 30,
+        "wrong_settled": 2,
+        "waiting": 0,
+        "accuracy": 0.9375,
+        "ceiling": 0.9375,
+        "by_status": {
+          "auto": 27,
+          "unmapped": 5
+        }
+      },
+      "_m": {
+        "columns": 32,
+        "correct": 30,
+        "wrong_settled": 2,
+        "waiting": 0,
+        "accuracy": 0.9375,
+        "ceiling": 0.9375,
+        "by_status": {
+          "auto": 27,
+          "unmapped": 5
+        }
+      }
+    },
+    "clinic": {
+      "discovery": {
+        "recovered": 49,
+        "total": 49,
+        "recall": 1.0,
+        "missing": []
+      },
+      "discovery_without_program": {
+        "recovered": 39,
+        "total": 49,
+        "recall": 0.7959183673469388
+      },
+      "defects": {
+        "injected": 3327,
+        "detected": 3144,
+        "recall": 0.9449954914337241,
+        "core_recall": 1.0,
+        "by_type": {
+          "duplicate": {
+            "injected": 508,
+            "detected": 508,
+            "recall": 1.0,
+            "precision": 0.996078431372549
+          },
+          "invalid_date": {
+            "injected": 762,
+            "detected": 762,
+            "recall": 1.0,
+            "precision": 1.0
+          },
+          "mixed_case": {
+            "injected": 762,
+            "detected": 579,
+            "recall": 0.7598425196850394,
+            "precision": 0.8283261802575107
+          },
+          "null_required": {
+            "injected": 762,
+            "detected": 762,
+            "recall": 1.0,
+            "precision": 1.0
+          },
+          "orphan_fk": {
+            "injected": 251,
+            "detected": 251,
+            "recall": 1.0,
+            "precision": 1.0
+          },
+          "out_of_range": {
+            "injected": 282,
+            "detected": 282,
+            "recall": 1.0,
+            "precision": 0.9306930693069307
+          }
+        }
+      },
+      "mapping_before_llm": {
+        "columns": 44,
+        "correct": 42,
+        "wrong_settled": 1,
+        "waiting": 1,
+        "accuracy": 0.9545454545454546,
+        "ceiling": 0.9772727272727273,
+        "by_status": {
+          "auto": 40,
+          "unmapped": 3,
+          "needs_llm": 1
+        }
+      },
+      "_m": {
+        "columns": 44,
+        "correct": 42,
+        "wrong_settled": 1,
+        "waiting": 1,
+        "accuracy": 0.9545454545454546,
+        "ceiling": 0.9772727272727273,
+        "by_status": {
+          "auto": 40,
+          "unmapped": 3,
+          "needs_llm": 1
+        }
+      }
+    }
+  },
+  "runs": {
+    "runs": {
+      "commerce": {
+        "first": {
+          "job_id": "9040debb-1b31-415a-963d-22d9bcac473a",
+          "status": "COMPLETED",
+          "stage_seconds": {
+            "discover": 5.03,
+            "profile": 0.97,
+            "map": 1.07,
+            "approve": 0.11,
+            "review": 0.13,
+            "rules": 0.07,
+            "dry_run": 0.14,
+            "load": 1.78
+          },
+          "total_seconds": 9.06,
+          "mapping_counts": {
+            "auto": 28,
+            "memory": 0,
+            "review": 0,
+            "unmapped": 6,
+            "needs_llm": 0
+          },
+          "approved": 28,
+          "review": {
+            "accepted": 0,
+            "corrected": 1,
+            "rejected": 7
+          },
+          "defect_handling": {
+            "quarantine_expected": 347,
+            "quarantine_caught": 347,
+            "quarantine_with_expected_reason": 347,
+            "duplicates_expected": 124,
+            "duplicates_removed": 124,
+            "quarantined_total": 823,
+            "quarantined_without_a_defect": 352,
+            "quarantined_without_a_defect_by_reason": {
+              "orphan_fk": 352
+            }
+          },
+          "against_clean": {
+            "customers": {
+              "loaded": 57,
+              "in_clean_data": 57,
+              "cells": 570,
+              "cells_equal": 568,
+              "rows_exact": 55,
+              "differ_only_in_case": 2,
+              "differing_fields": {
+                "address_line1": 2
+              },
+              "examples": {
+                "customers.address_line1": [
+                  [
+                    "1498 rue B\u00e9langer",
+                    "1498 Rue B\u00e9langer"
+                  ],
+                  [
+                    "8210 111 ST NW",
+                    "8210 111 St Nw"
+                  ]
+                ]
+              }
+            },
+            "order_items": {
+              "loaded": 1768,
+              "in_clean_data": 1768,
+              "cells": 7072,
+              "cells_equal": 7072,
+              "rows_exact": 1768,
+              "differ_only_in_case": 0,
+              "differing_fields": {},
+              "examples": {}
+            },
+            "orders": {
+              "loaded": 362,
+              "in_clean_data": 362,
+              "cells": 2172,
+              "cells_equal": 2172,
+              "rows_exact": 362,
+              "differ_only_in_case": 0,
+              "differing_fields": {},
+              "examples": {}
+            },
+            "products": {
+              "loaded": 3328,
+              "in_clean_data": 3328,
+              "cells": 9984,
+              "cells_equal": 9975,
+              "rows_exact": 3319,
+              "differ_only_in_case": 9,
+              "differing_fields": {
+                "name": 7,
+                "category": 2
+              },
+              "examples": {
+                "products.name": [
+                  [
+                    "A.N.D.R.O.T.A.Z.",
+                    "A.n.d.r.o.t.a.z."
+                  ],
+                  [
+                    "\u00c9 que Nessa Encarna\u00e7\u00e3o Eu Nasci Manga",
+                    "\u00c9 Que Nessa Encarna\u00e7\u00e3o Eu Nasci Manga"
+                  ],
+                  [
+                    "\u00c1gua de Beber",
+                    "\u00c1gua De Beber"
+                  ]
+                ],
+                "products.category": [
+                  [
+                    "R&B/Soul",
+                    "R&b/soul"
+                  ],
+                  [
+                    "Electronica/Dance",
+                    "Electronica/dance"
+                  ]
+                ]
+              }
+            }
+          },
+          "llm": {
+            "calls": 0,
+            "cache_hits": 0,
+            "tokens": 0,
+            "by_provider": {}
+          },
+          "reconciliation": {
+            "passed": true,
+            "source_rows": 6338,
+            "loaded": 5515,
+            "quarantined": 823,
+            "quality_before": 91.27,
+            "quality_after": 99.85,
+            "tables": {
+              "customers": {
+                "loaded": 57,
+                "quarantined": 3,
+                "passed": true
+              },
+              "products": {
+                "loaded": 3328,
+                "quarantined": 245,
+                "passed": true
+              },
+              "orders": {
+                "loaded": 362,
+                "quarantined": 58,
+                "passed": true
+              },
+              "order_items": {
+                "loaded": 1768,
+                "quarantined": 517,
+                "passed": true
+              }
+            }
+          },
+          "field_accuracy": 0.9994443883220527,
+          "loaded_in_clean_data": 1.0,
+          "quarantine_recall": 1.0,
+          "dedup_recall": 1.0
+        },
+        "repeat": {
+          "job_id": "a521f14b-8925-4c24-8235-ef7be4694da3",
+          "status": "COMPLETED",
+          "stage_seconds": {
+            "discover": 5.06,
+            "profile": 0.84,
+            "map": 0.47,
+            "approve": 0.1,
+            "review": 0.11,
+            "rules": 0.06,
+            "dry_run": 0.13,
+            "load": 2.68
+          },
+          "total_seconds": 9.24,
+          "mapping_counts": {
+            "auto": 0,
+            "memory": 29,
+            "review": 0,
+            "unmapped": 5,
+            "needs_llm": 0
+          },
+          "approved": 29,
+          "review": {
+            "accepted": 0,
+            "corrected": 0,
+            "rejected": 7
+          },
+          "defect_handling": {
+            "quarantine_expected": 347,
+            "quarantine_caught": 347,
+            "quarantine_with_expected_reason": 347,
+            "duplicates_expected": 124,
+            "duplicates_removed": 124,
+            "quarantined_total": 823,
+            "quarantined_without_a_defect": 352,
+            "quarantined_without_a_defect_by_reason": {
+              "orphan_fk": 352
+            }
+          },
+          "against_clean": {
+            "customers": {
+              "loaded": 57,
+              "in_clean_data": 57,
+              "cells": 570,
+              "cells_equal": 568,
+              "rows_exact": 55,
+              "differ_only_in_case": 2,
+              "differing_fields": {
+                "address_line1": 2
+              },
+              "examples": {
+                "customers.address_line1": [
+                  [
+                    "1498 rue B\u00e9langer",
+                    "1498 Rue B\u00e9langer"
+                  ],
+                  [
+                    "8210 111 ST NW",
+                    "8210 111 St Nw"
+                  ]
+                ]
+              }
+            },
+            "order_items": {
+              "loaded": 1768,
+              "in_clean_data": 1768,
+              "cells": 7072,
+              "cells_equal": 7072,
+              "rows_exact": 1768,
+              "differ_only_in_case": 0,
+              "differing_fields": {},
+              "examples": {}
+            },
+            "orders": {
+              "loaded": 362,
+              "in_clean_data": 362,
+              "cells": 2172,
+              "cells_equal": 2172,
+              "rows_exact": 362,
+              "differ_only_in_case": 0,
+              "differing_fields": {},
+              "examples": {}
+            },
+            "products": {
+              "loaded": 3328,
+              "in_clean_data": 3328,
+              "cells": 9984,
+              "cells_equal": 9975,
+              "rows_exact": 3319,
+              "differ_only_in_case": 9,
+              "differing_fields": {
+                "name": 7,
+                "category": 2
+              },
+              "examples": {
+                "products.name": [
+                  [
+                    "A.N.D.R.O.T.A.Z.",
+                    "A.n.d.r.o.t.a.z."
+                  ],
+                  [
+                    "\u00c9 que Nessa Encarna\u00e7\u00e3o Eu Nasci Manga",
+                    "\u00c9 Que Nessa Encarna\u00e7\u00e3o Eu Nasci Manga"
+                  ],
+                  [
+                    "\u00c1gua de Beber",
+                    "\u00c1gua De Beber"
+                  ]
+                ],
+                "products.category": [
+                  [
+                    "R&B/Soul",
+                    "R&b/soul"
+                  ],
+                  [
+                    "Electronica/Dance",
+                    "Electronica/dance"
+                  ]
+                ]
+              }
+            }
+          },
+          "llm": {
+            "calls": 0,
+            "cache_hits": 0,
+            "tokens": 0,
+            "by_provider": {}
+          },
+          "reconciliation": {
+            "passed": true,
+            "source_rows": 6338,
+            "loaded": 5515,
+            "quarantined": 823,
+            "quality_before": 91.27,
+            "quality_after": 99.85,
+            "tables": {
+              "customers": {
+                "loaded": 57,
+                "quarantined": 3,
+                "passed": true
+              },
+              "products": {
+                "loaded": 3328,
+                "quarantined": 245,
+                "passed": true
+              },
+              "orders": {
+                "loaded": 362,
+                "quarantined": 58,
+                "passed": true
+              },
+              "order_items": {
+                "loaded": 1768,
+                "quarantined": 517,
+                "passed": true
+              }
+            }
+          },
+          "field_accuracy": 0.9994443883220527,
+          "loaded_in_clean_data": 1.0,
+          "quarantine_recall": 1.0,
+          "dedup_recall": 1.0
+        }
+      },
+      "clinic": {
+        "first": {
+          "job_id": "42ee4bc6-7ca6-4c65-9682-67d2daeb6fb5",
+          "status": "COMPLETED",
+          "stage_seconds": {
+            "discover": 1.89,
+            "profile": 1.61,
+            "map": 1.34,
+            "approve": 0.13,
+            "review": 0.1,
+            "rules": 0.08,
+            "dry_run": 0.18,
+            "load": 13.49
+          },
+          "total_seconds": 18.59,
+          "mapping_counts": {
+            "auto": 40,
+            "memory": 0,
+            "review": 0,
+            "unmapped": 3,
+            "needs_llm": 1
+          },
+          "approved": 40,
+          "review": {
+            "accepted": 0,
+            "corrected": 2,
+            "rejected": 3
+          },
+          "defect_handling": {
+            "quarantine_expected": 2057,
+            "quarantine_caught": 2051,
+            "quarantine_with_expected_reason": 2051,
+            "duplicates_expected": 508,
+            "duplicates_removed": 508,
+            "quarantined_total": 5238,
+            "quarantined_without_a_defect": 2679,
+            "quarantined_without_a_defect_by_reason": {
+              "orphan_fk": 2659,
+              "duplicate": 1,
+              "out_of_range": 19
+            }
+          },
+          "against_clean": {
+            "conditions": {
+              "loaded": 4189,
+              "in_clean_data": 4189,
+              "cells": 25134,
+              "cells_equal": 25134,
+              "rows_exact": 4189,
+              "differ_only_in_case": 0,
+              "differing_fields": {},
+              "examples": {}
+            },
+            "encounters": {
+              "loaded": 6630,
+              "in_clean_data": 6630,
+              "cells": 39780,
+              "cells_equal": 39779,
+              "rows_exact": 6629,
+              "differ_only_in_case": 1,
+              "differing_fields": {
+                "description": 1
+              },
+              "examples": {
+                "encounters.description": [
+                  [
+                    "Death Certification",
+                    "Death certification"
+                  ]
+                ]
+              }
+            },
+            "medications": {
+              "loaded": 4838,
+              "in_clean_data": 4838,
+              "cells": 33866,
+              "cells_equal": 33709,
+              "rows_exact": 4681,
+              "differ_only_in_case": 157,
+              "differing_fields": {
+                "description": 157
+              },
+              "examples": {
+                "medications.description": [
+                  [
+                    "albuterol 5 MG/ML Inhalation Solution",
+                    "ALBUTEROL 5 mg/ml iNHALATION sOLUTION"
+                  ],
+                  [
+                    "amLODIPine 2.5 MG Oral Tablet",
+                    "amlodipine 2.5 mg oral tablet"
+                  ],
+                  [
+                    "lisinopril 10 MG Oral Tablet",
+                    "LISINOPRIL 10 MG ORAL TABLET"
+                  ]
+                ]
+              }
+            },
+            "observations": {
+              "loaded": 4723,
+              "in_clean_data": 4723,
+              "cells": 33061,
+              "cells_equal": 32939,
+              "rows_exact": 4601,
+              "differ_only_in_case": 122,
+              "differing_fields": {
+                "description": 122
+              },
+              "examples": {
+                "observations.description": [
+                  [
+                    "FEV1/FVC",
+                    "Fev1/fvc"
+                  ],
+                  [
+                    "Urea nitrogen [Mass/volume] in Serum or Plasma",
+                    "Urea nitrogen [mass/volume] in serum or plasma"
+                  ],
+                  [
+                    "Hemoglobin A1c/Hemoglobin.total in Blood",
+                    "Hemoglobin a1c/hemoglobin.total in blood"
+                  ]
+                ]
+              }
+            },
+            "patients": {
+              "loaded": 282,
+              "in_clean_data": 282,
+              "cells": 3102,
+              "cells_equal": 3102,
+              "rows_exact": 282,
+              "differ_only_in_case": 0,
+              "differing_fields": {},
+              "examples": {}
+            }
+          },
+          "llm": {
+            "calls": 0,
+            "cache_hits": 0,
+            "tokens": 0,
+            "by_provider": {}
+          },
+          "reconciliation": {
+            "passed": true,
+            "source_rows": 25900,
+            "loaded": 20662,
+            "quarantined": 5238,
+            "quality_before": 89.35,
+            "quality_after": 99.79,
+            "tables": {
+              "patients": {
+                "loaded": 282,
+                "quarantined": 24,
+                "passed": true
+              },
+              "encounters": {
+                "loaded": 6630,
+                "quarantined": 1225,
+                "passed": true
+              },
+              "conditions": {
+                "loaded": 4189,
+                "quarantined": 1202,
+                "passed": true
+              },
+              "medications": {
+                "loaded": 4838,
+                "quarantined": 1390,
+                "passed": true
+              },
+              "observations": {
+                "loaded": 4723,
+                "quarantined": 1397,
+                "passed": true
+              }
+            }
+          },
+          "field_accuracy": 0.9979250498358566,
+          "loaded_in_clean_data": 1.0,
+          "quarantine_recall": 0.9970831307729704,
+          "dedup_recall": 1.0
+        },
+        "repeat": {
+          "job_id": "730deb16-7c92-4a58-85a2-0d1049a744ba",
+          "status": "COMPLETED",
+          "stage_seconds": {
+            "discover": 1.93,
+            "profile": 1.58,
+            "map": 0.68,
+            "approve": 0.12,
+            "review": 0.08,
+            "rules": 0.07,
+            "dry_run": 0.15,
+            "load": 7.06
+          },
+          "total_seconds": 11.47,
+          "mapping_counts": {
+            "auto": 0,
+            "memory": 41,
+            "review": 0,
+            "unmapped": 3,
+            "needs_llm": 0
+          },
+          "approved": 41,
+          "review": {
+            "accepted": 0,
+            "corrected": 1,
+            "rejected": 3
+          },
+          "defect_handling": {
+            "quarantine_expected": 2057,
+            "quarantine_caught": 2051,
+            "quarantine_with_expected_reason": 2051,
+            "duplicates_expected": 508,
+            "duplicates_removed": 508,
+            "quarantined_total": 5238,
+            "quarantined_without_a_defect": 2679,
+            "quarantined_without_a_defect_by_reason": {
+              "orphan_fk": 2659,
+              "duplicate": 1,
+              "out_of_range": 19
+            }
+          },
+          "against_clean": {
+            "conditions": {
+              "loaded": 4189,
+              "in_clean_data": 4189,
+              "cells": 25134,
+              "cells_equal": 25134,
+              "rows_exact": 4189,
+              "differ_only_in_case": 0,
+              "differing_fields": {},
+              "examples": {}
+            },
+            "encounters": {
+              "loaded": 6630,
+              "in_clean_data": 6630,
+              "cells": 39780,
+              "cells_equal": 39779,
+              "rows_exact": 6629,
+              "differ_only_in_case": 1,
+              "differing_fields": {
+                "description": 1
+              },
+              "examples": {
+                "encounters.description": [
+                  [
+                    "Death Certification",
+                    "Death certification"
+                  ]
+                ]
+              }
+            },
+            "medications": {
+              "loaded": 4838,
+              "in_clean_data": 4838,
+              "cells": 33866,
+              "cells_equal": 33709,
+              "rows_exact": 4681,
+              "differ_only_in_case": 157,
+              "differing_fields": {
+                "description": 157
+              },
+              "examples": {
+                "medications.description": [
+                  [
+                    "albuterol 5 MG/ML Inhalation Solution",
+                    "ALBUTEROL 5 mg/ml iNHALATION sOLUTION"
+                  ],
+                  [
+                    "amLODIPine 2.5 MG Oral Tablet",
+                    "amlodipine 2.5 mg oral tablet"
+                  ],
+                  [
+                    "lisinopril 10 MG Oral Tablet",
+                    "LISINOPRIL 10 MG ORAL TABLET"
+                  ]
+                ]
+              }
+            },
+            "observations": {
+              "loaded": 4723,
+              "in_clean_data": 4723,
+              "cells": 33061,
+              "cells_equal": 32939,
+              "rows_exact": 4601,
+              "differ_only_in_case": 122,
+              "differing_fields": {
+                "description": 122
+              },
+              "examples": {
+                "observations.description": [
+                  [
+                    "FEV1/FVC",
+                    "Fev1/fvc"
+                  ],
+                  [
+                    "Urea nitrogen [Mass/volume] in Serum or Plasma",
+                    "Urea nitrogen [mass/volume] in serum or plasma"
+                  ],
+                  [
+                    "Hemoglobin A1c/Hemoglobin.total in Blood",
+                    "Hemoglobin a1c/hemoglobin.total in blood"
+                  ]
+                ]
+              }
+            },
+            "patients": {
+              "loaded": 282,
+              "in_clean_data": 282,
+              "cells": 3102,
+              "cells_equal": 3102,
+              "rows_exact": 282,
+              "differ_only_in_case": 0,
+              "differing_fields": {},
+              "examples": {}
+            }
+          },
+          "llm": {
+            "calls": 0,
+            "cache_hits": 0,
+            "tokens": 0,
+            "by_provider": {}
+          },
+          "reconciliation": {
+            "passed": true,
+            "source_rows": 25900,
+            "loaded": 20662,
+            "quarantined": 5238,
+            "quality_before": 89.35,
+            "quality_after": 99.79,
+            "tables": {
+              "patients": {
+                "loaded": 282,
+                "quarantined": 24,
+                "passed": true
+              },
+              "encounters": {
+                "loaded": 6630,
+                "quarantined": 1225,
+                "passed": true
+              },
+              "conditions": {
+                "loaded": 4189,
+                "quarantined": 1202,
+                "passed": true
+              },
+              "medications": {
+                "loaded": 4838,
+                "quarantined": 1390,
+                "passed": true
+              },
+              "observations": {
+                "loaded": 4723,
+                "quarantined": 1397,
+                "passed": true
+              }
+            }
+          },
+          "field_accuracy": 0.9979250498358566,
+          "loaded_in_clean_data": 1.0,
+          "quarantine_recall": 0.9970831307729704,
+          "dedup_recall": 1.0
+        }
+      }
+    },
+    "expected_rows": {
+      "customers": 59,
+      "order_items": 2240,
+      "orders": 412,
+      "products": 3503,
+      "conditions": 5285,
+      "encounters": 7701,
+      "medications": 6106,
+      "observations": 6000,
+      "patients": 300
+    },
+    "llm_configured": false
+  }
+}

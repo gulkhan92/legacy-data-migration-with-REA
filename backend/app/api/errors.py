@@ -11,6 +11,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DataError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 log = logging.getLogger(__name__)
@@ -46,6 +47,13 @@ def install_error_handlers(app: FastAPI) -> None:
         fields = [{"field": ".".join(str(part) for part in e["loc"]), "message": e["msg"], "type": e["type"]} for e in exc.errors()]
         detail = [{"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]} for e in exc.errors()]  # no `input`, no `ctx`
         return JSONResponse(error_body(422, "The request is not valid", detail, fields), status_code=422)
+
+    @app.exception_handler(DataError)
+    async def unstorable(request: Request, exc: DataError) -> JSONResponse:
+        """The database refused a value it cannot hold, for example a null character in text. The person sent something that cannot be
+        stored, which is a problem with the request and not with the server. The value is not echoed."""
+        log.warning("a value the database cannot store was refused on %s %s", request.method, request.url.path)
+        return JSONResponse(error_body(422, "The request contains a character or a value that cannot be stored"), status_code=422)
 
     @app.exception_handler(Exception)
     async def unexpected(request: Request, exc: Exception) -> JSONResponse:

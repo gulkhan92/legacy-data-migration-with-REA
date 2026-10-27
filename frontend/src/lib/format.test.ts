@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCents, formatCompact, formatDate, formatDuration, formatInt, formatPercent, formatRate } from "@/lib/format";
+import { formatBytes, formatCents, formatCentsCompact, formatCompact, formatDate, formatDay, formatDuration, formatInt, formatMs, formatPercent, formatRate, formatSignedPercent, timeAgo } from "@/lib/format";
 
 describe("format", () => {
   it("prints whole dollars without cents and others with them", () => {
@@ -29,5 +29,46 @@ describe("format", () => {
     expect(formatDuration(41)).toBe("41 s");
     expect(formatDuration(293.2)).toBe("4.9 min");
     expect(formatDate("2026-10-22")).toBe("October 22, 2026");
+  });
+});
+
+describe("console formats", () => {
+  it("prints cents as compact dollars", () => {
+    expect(formatCentsCompact(7_996_000)).toBe("$80K");
+    expect(formatCentsCompact(250_000)).toBe("$2.5K");
+    expect(formatCentsCompact(0)).toBe("$0");
+  });
+
+  it("signs a change", () => {
+    expect(formatSignedPercent(0.0597)).toBe("+6.0%");
+    expect(formatSignedPercent(-0.025)).toBe("-2.5%");
+    expect(formatSignedPercent(0)).toBe("0.0%");
+  });
+
+  it("picks the unit of a duration", () => {
+    expect(formatMs(850)).toBe("850 ms");
+    expect(formatMs(42_000)).toBe("42 s");
+    expect(formatMs(330_000)).toBe("5.5 min");
+    expect(formatMs(8_280_000)).toBe("2.3 h");
+  });
+
+  it("says how long ago, without moving with the clock", () => {
+    const now = Date.parse("2026-10-26T12:00:00Z");
+    expect(timeAgo("2026-10-26T11:59:30Z", now)).toBe("just now");
+    expect(timeAgo("2026-10-26T11:55:00Z", now)).toBe("5 min ago");
+    expect(timeAgo("2026-10-26T09:00:00Z", now)).toBe("3 h ago");
+    expect(timeAgo("2026-10-24T12:00:00Z", now)).toBe("2 d ago");
+  });
+
+  it("prints a day without the time zone moving it", () => {
+    expect(formatDay("2026-10-22")).toBe("Oct 22, 2026");
+    expect(formatDay("2026-10-22T23:30:00+00:00")).toBe("Oct 22, 2026");
+  });
+
+  it("prints sizes", () => {
+    expect(formatBytes(null)).toBe("");
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(385_024)).toBe("376 KB");
+    expect(formatBytes(26_000_000)).toBe("24.8 MB");
   });
 });

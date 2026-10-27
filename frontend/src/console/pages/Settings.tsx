@@ -15,21 +15,23 @@ import { describeError, ErrorState, LoadingRows } from "../ui/states";
 import { Meter } from "../ui/status";
 import { useToast } from "../ui/toast";
 
-const number = (label: string, min: number, max: number) =>
-  z.coerce
-    .number({ invalid_type_error: `${label} must be a number` })
-    .int(`${label} must be a whole number`)
-    .min(min, `${label} must be at least ${formatInt(min)}`)
-    .max(max, `${label} must be at most ${formatInt(max)}`);
+/** A whole number typed into a field: the form holds text, and the number is made when it is saved. */
+const whole = (label: string, min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .regex(/^\d+$/, `${label} must be a whole number`)
+    .refine((v) => Number(v) >= min, `${label} must be at least ${formatInt(min)}`)
+    .refine((v) => Number(v) <= max, `${label} must be at most ${formatInt(max)}`);
 
 const budgets = z.object({
-  job_token_budget: number("The budget per migration", 500, 100_000),
-  org_daily_token_budget: number("The daily budget", 1_000, 10_000_000),
-  max_calls_per_job: number("The number of calls", 1, 10),
+  job_token_budget: whole("The budget per migration", 500, 100_000),
+  org_daily_token_budget: whole("The daily budget", 1_000, 10_000_000),
+  max_calls_per_job: whole("The number of calls", 1, 10),
 });
 type Budgets = z.infer<typeof budgets>;
 
-const retention = z.object({ retention_days: number("The retention", 7, 3650) });
+const retention = z.object({ retention_days: whole("The retention", 7, 3650) });
 type Retention = z.infer<typeof retention>;
 
 function ProviderRow({ provider, position, last, onMove }: { provider: LlmProvider; position: number; last: boolean; onMove: (delta: -1 | 1) => void }) {
@@ -85,10 +87,11 @@ function LlmSection({ settings }: { settings: LlmSettings }) {
   const [order, setOrder] = useState(settings.provider_order);
   const form = useForm<Budgets>({
     resolver: zodResolver(budgets),
-    defaultValues: { job_token_budget: settings.job_token_budget, org_daily_token_budget: settings.org_daily_token_budget, max_calls_per_job: settings.max_calls_per_job },
+    defaultValues: { job_token_budget: String(settings.job_token_budget), org_daily_token_budget: String(settings.org_daily_token_budget), max_calls_per_job: String(settings.max_calls_per_job) },
   });
   const save = useMutation({
-    mutationFn: (v: Budgets) => adminApi.saveLlmSettings({ ...v, provider_order: order }),
+    mutationFn: (v: Budgets) =>
+      adminApi.saveLlmSettings({ job_token_budget: Number(v.job_token_budget), org_daily_token_budget: Number(v.org_daily_token_budget), max_calls_per_job: Number(v.max_calls_per_job), provider_order: order }),
     onSuccess: () => {
       toast.success("The language model settings were saved");
       void client.invalidateQueries({ queryKey: ["llm-settings"] });
@@ -161,12 +164,12 @@ function RetentionSection() {
   const toast = useToast();
   const client = useQueryClient();
   const current = useQuery({ queryKey: ["retention"], queryFn: ({ signal }) => adminApi.retention(signal) });
-  const form = useForm<Retention>({ resolver: zodResolver(retention), defaultValues: { retention_days: 365 } });
+  const form = useForm<Retention>({ resolver: zodResolver(retention), defaultValues: { retention_days: "365" } });
   useEffect(() => {
-    if (current.data) form.reset({ retention_days: current.data.retention_days });
+    if (current.data) form.reset({ retention_days: String(current.data.retention_days) });
   }, [current.data, form]);
   const save = useMutation({
-    mutationFn: (v: Retention) => adminApi.saveRetention(v.retention_days),
+    mutationFn: (v: Retention) => adminApi.saveRetention(Number(v.retention_days)),
     onSuccess: () => {
       toast.success("The retention period was saved");
       void client.invalidateQueries({ queryKey: ["retention"] });

@@ -14,6 +14,8 @@ RUN groupadd --gid 10001 rea && useradd --uid 10001 --gid 10001 --no-create-home
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --omit=dev --no-audit --no-fund && npm cache clean --force
+# The runner starts node directly; npm is only needed to install, and its own bundled packages are not ours to patch, so it is removed.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 COPY wrapper.mjs ./
 
 ENV HOME=/tmp REA_TIMEOUT_SECONDS=120 REA_ALLOWED_ROOTS=/work NODE_ENV=production

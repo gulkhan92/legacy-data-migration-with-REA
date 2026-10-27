@@ -1,0 +1,239 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1" # weekly, so new advisories surface without a code change
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  POSTGRES_USER: legacylift
+  POSTGRES_PASSWORD: ci-owner-password-not-a-secret
+  APP_DB_PASSWORD: ci-app-password-not-a-secret
+  DATABASE_ADMIN_URL: postgresql+psycopg://legacylift:ci-owner-password-not-a-secret@localhost:5432/legacylift
+  DATABASE_URL: postgresql+psycopg://legacylift_app:ci-app-password-not-a-secret@localhost:5432/legacylift
+  ENVIRONMENT: test
+
+jobs:
+  backend:
+    name: Backend tests and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: legacylift
+          POSTGRES_USER: legacylift
+          POSTGRES_PASSWORD: ci-owner-password-not-a-secret
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U legacylift -d legacylift" --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install the backend (the CPU build of PyTorch)
+        working-directory: backend
+        run: |
+          uv sync --frozen
+          uv pip install --reinstall torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install the REA runner
+        working-directory: rea-runner
+        run: npm ci --ignore-scripts
+      - name: Download the embedding model
+        working-directory: backend
+        run: uv run python -m app.mapping.download_model
+      - name: Tests with coverage
+        working-directory: backend
+        run: uv run pytest -q --cov=app --cov-report=json:var/coverage.json --cov-report=term:skip-covered
+      - name: Coverage of pipeline, llm and core is at least 80 percent
+        run: python scripts/coverage_gate.py backend/var/coverage.json
+
+  e2e:
+    name: Browser tests, the whole stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: backend
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: legacylift
+          POSTGRES_USER: legacylift
+          POSTGRES_PASSWORD: ci-owner-password-not-a-secret
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U legacylift -d legacylift" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      JOBS_EXECUTION: eager # the stages run inside the request, so no worker is needed
+      COOKIE_SECURE: "false" # the tests use plain http on localhost
+      RATE_LIMIT_ENABLED: "false" # each role signs in once, but the sign in tests of the site sign in several times a minute
+      CACHE_BACKEND: memory
+      UPLOAD_DIR: /tmp/legacylift-uploads
+      REA_COMMAND: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: A password for the demo users of this run
+        run: |
+          pw="$(python3 -c 'import secrets; print(secrets.token_urlsafe(18) + "-Aa1")')"
+          echo "::add-mask::$pw"
+          echo "E2E_PASSWORD=$pw" >> "$GITHUB_ENV"
+          echo "SEED_ADMIN_PASSWORD=$pw" >> "$GITHUB_ENV"
+          echo "SEED_ANALYST_PASSWORD=$pw" >> "$GITHUB_ENV"
+          echo "SEED_VIEWER_PASSWORD=$pw" >> "$GITHUB_ENV"
+      - name: Install the backend, the REA runner and the model
+        run: |
+          (cd backend && uv sync --frozen && uv pip install --reinstall torch --index-url https://download.pytorch.org/whl/cpu && uv run python -m app.mapping.download_model)
+          (cd rea-runner && npm ci --ignore-scripts)
+      - name: Migrate, seed the users, the target schemas and 24 months of history
+        working-directory: backend
+        run: |
+          uv run alembic upgrade head
+          uv run python -m app.seed
+          uv run python -m app.mapping.seed_targets
+          uv run python -m app.billing.cli history --reset
+      - name: Start the API
+        working-directory: backend
+        run: |
+          nohup uv run uvicorn app.main:app --port 8000 > ../api.log 2>&1 &
+          for i in $(seq 1 60); do curl -fs http://127.0.0.1:8000/health && break || sleep 2; done
+      - name: Build the site and run the browser tests
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - name: The API log, when a test failed
+        if: failure()
+        run: tail -n 200 api.log
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  security:
+    name: Dependency, secret and configuration scans
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the secret scan reads the history
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Secrets, in the tree and in every commit
+        run: python scripts/secrets_scan.py --history
+      - name: Python dependencies
+        working-directory: backend
+        run: |
+          uv export --frozen --no-dev --no-hashes --no-emit-project -o requirements.txt
+          uvx pip-audit -r requirements.txt --no-deps --disable-pip
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm audit --audit-level=high
+      - name: REA runner dependencies
+        working-directory: rea-runner
+        run: npm audit --audit-level=high
+      - name: Trivy, files and Dockerfiles
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  images:
+    name: Images build and pass Trivy
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - {name: frontend, file: frontend/Dockerfile, context: .}
+          - {name: rea-runner, file: rea-runner/Dockerfile, context: rea-runner}
+          - {name: backend, file: backend/Dockerfile, context: .}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build -f ${{ matrix.image.file }} -t legacylift-${{ matrix.image.name }}:ci ${{ matrix.image.context }}
+      - name: Scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: legacylift-${{ matrix.image.name }}:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  load:
+    name: Load check, 200,000 rows
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: backend
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: legacylift
+          POSTGRES_USER: legacylift
+          POSTGRES_PASSWORD: ci-owner-password-not-a-secret
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U legacylift -d legacylift" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install and migrate
+        working-directory: backend
+        run: |
+          uv sync --frozen
+          uv pip install --reinstall torch --index-url https://download.pytorch.org/whl/cpu
+          uv run python -m app.mapping.download_model
+          uv run alembic upgrade head
+          uv run python -m app.mapping.seed_targets
+      - name: Migrate 200,000 rows and watch the memory
+        working-directory: backend
+        run: uv run python ../scripts/load_check.py --no-write

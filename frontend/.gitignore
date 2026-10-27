@@ -6,3 +6,4 @@ playwright-report
 lighthouse-reports
 .vite
 *.tsbuildinfo
+e2e/.auth

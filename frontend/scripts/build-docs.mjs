@@ -15,7 +15,11 @@ const outFile = resolve(here, "../src/generated/docs.json");
 const documents = [
   { slug: "architecture", file: "architecture.md", summary: "How each part of the platform is built: discovery, profiling, mapping, the model router, transformation, jobs, billing and analytics." },
   { slug: "security", file: "security.md", summary: "The security controls that are implemented, each covered by an automated test." },
+  { slug: "security-review", file: "security-review.md", summary: "The review of those controls against OWASP ASVS, the scans that were run, what they found and what was fixed." },
+  { slug: "evaluation", file: "evaluation.md", summary: "What the platform achieves on the two sample systems, measured: discovery, defect detection, mapping, the loaded data, time and tokens." },
+  { slug: "load-check", file: "load-check.md", summary: "A file of 200,000 rows migrated with the memory of the process measured." },
 ];
+const slugs = new Set(documents.map((d) => d.slug));
 
 const slugify = (text) =>
   text
@@ -45,6 +49,11 @@ for (const doc of documents) {
   });
   // A table or a code block that scrolls sideways must be reachable with the keyboard (WCAG 2.1.1).
   html = html.replace(/<table>/g, '<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table>').replace(/<\/table>/g, "</table></div>").replace(/<pre>/g, '<pre tabindex="0">');
+  // A link from one document to another (a relative link to a .md file) goes to the viewer page of that document.
+  html = html.replace(/<a href="([a-z0-9-]+)\.md(#[^"]*)?"/g, (_, slug, hash = "") => {
+    if (!slugs.has(slug)) throw new Error(`${doc.file} links to ${slug}.md, which is not one of the documents of the viewer`);
+    return `<a href="/resources/docs/${slug}${hash}"`;
+  });
   html = html.replace(/<a href="(https?:[^"]+)"/g, '<a href="$1" rel="noopener noreferrer" target="_blank"');
   const title = (headings.find((h) => h.level === 1)?.text ?? doc.slug).trim();
   result.push({ slug: doc.slug, title, summary: doc.summary, html, headings: headings.filter((h) => h.level > 1) });

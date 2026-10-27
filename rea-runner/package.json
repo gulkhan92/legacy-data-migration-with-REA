@@ -4,8 +4,14 @@
   "private": true,
   "description": "Static analysis runner that wraps the pinned REA command line tool",
   "type": "module",
-  "engines": { "node": ">=24.15" },
+  "engines": {
+    "node": ">=24.15"
+  },
   "dependencies": {
     "rea-agents": "6.7.0"
+  },
+  "overrides": {
+    "zod": "4.6.7",
+    "fast-uri": "^3.1.9"
   }
 }

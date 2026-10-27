@@ -39,7 +39,7 @@ def map_job(
     body: MapRequest,
     request: Request,
     principal: Principal = Depends(require_role(Role.ANALYST)),
-    db: Session = Depends(get_tenant_db),
+    db: Session = Depends(get_tenant_db, scope="function"),
 ) -> MapSummary:
     job = db.get(Job, job_id)
     if job is None:
@@ -61,20 +61,20 @@ def map_job(
 
 
 @router.get("/jobs/{job_id}/mappings")
-def list_mappings(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> list[dict[str, Any]]:
+def list_mappings(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> list[dict[str, Any]]:
     if db.get(Job, job_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     return service.mappings_for_job(db, job_id)
 
 
 @router.get("/target-schemas")
-def list_schemas(_: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> list[dict[str, Any]]:
+def list_schemas(_: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> list[dict[str, Any]]:
     rows = db.scalars(select(TargetSchema).order_by(TargetSchema.name, TargetSchema.version)).all()
     return [{"id": str(r.id), "name": r.name, "version": r.version, "description": r.description, "built_in": r.org_id is None} for r in rows]
 
 
 @router.get("/target-schemas/{schema_id}/fields")
-def schema_fields(schema_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> list[dict[str, Any]]:
+def schema_fields(schema_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> list[dict[str, Any]]:
     if db.get(TargetSchema, schema_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target schema not found")
     fields = db.scalars(select(TargetField).where(TargetField.schema_id == schema_id).order_by(TargetField.table_name, TargetField.name)).all()

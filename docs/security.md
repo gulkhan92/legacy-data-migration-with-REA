@@ -1,7 +1,7 @@
 # Security
 
-This document describes the security controls implemented so far (Phase 2). Each statement
-below is covered by an automated test in `backend/tests`.
+This document describes the security controls of the platform. Each statement below is covered by an automated test in `backend/tests` or by a browser
+test in `frontend/e2e`. The review of these controls against OWASP ASVS, with the scans and what they found, is in [security-review.md](security-review.md).
 
 ## Authentication
 
@@ -110,12 +110,20 @@ organization admins read only their own organization's entries.
 
 ## The site
 
-- The pages are served with a strict Content-Security-Policy (scripts, styles, fonts, images and connections only from the site itself, no framing, no plugins, no inline script), `X-Content-Type-Options`, `X-Frame-Options`, a referrer policy and a permissions policy that turns off camera, microphone, location and payment. The browser tests run against a server that reads these headers from `frontend/nginx.conf`, so a violation is a failing test.
+- The pages are served with a strict Content-Security-Policy (scripts, styles, fonts, images and connections only from the site itself, no framing, no plugins, no inline script, and one inline style element allowed by its hash: the scroll lock that Radix dialogs and menus insert), `X-Content-Type-Options`, `X-Frame-Options`, a referrer policy and a permissions policy that turns off camera, microphone, location and payment. The browser tests run against a server that reads these headers from `frontend/nginx.conf`, so a violation is a failing test.
 - The site loads nothing from another origin: fonts and images are its own, there are no analytics or advertising scripts and no tracking cookies.
 - The session cookies are not readable by scripts. The site keeps only a flag in local storage that says a session may exist (never a token), and the server decides.
 - The address a person returns to after signing in is accepted only when it is a path on this site, so a crafted link cannot send a signed in person elsewhere.
 - The documentation viewer renders documents from this repository at build time; the build refuses active content. Nothing a visitor submits is ever rendered as HTML.
 - The contact, demo and newsletter forms send only what was typed, with the CSRF header, are rate limited by the API, and carry a trap field for bots.
+
+## Transactions and error handling (Phase 13)
+
+- The database session of a request is committed before the response is sent (every route asks for it with `scope="function"`), so a write that was acknowledged
+  is a write that was stored, and a client that reads right after a write sees it. A test fails if a route forgets the scope.
+- A value the database cannot store, such as a null character in a search box, is answered with 422 and is not echoed; it is not an internal error.
+- No credential, session token, provider key, e-mail address or value of a migrated row is written to a log: a test runs a whole session at DEBUG level and searches everything that was logged.
+- Hostile text (injection strings, wildcards, path traversal, control characters) in every search parameter, forged and unsigned tokens, extra fields in requests and attempts to raise a role are tested.
 
 ## Known limits
 

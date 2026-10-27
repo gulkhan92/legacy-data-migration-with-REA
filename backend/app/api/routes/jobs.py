@@ -149,7 +149,7 @@ def _schema_by_name(db: Session, name: str) -> TargetSchema:
 
 
 @router.post("", response_model=JobOut, status_code=status.HTTP_201_CREATED, summary="Create a job for an uploaded source")
-def create_job(body: JobCreate, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> JobOut:
+def create_job(body: JobCreate, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> JobOut:
     source = db.get(Source, body.source_id)
     if source is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found")
@@ -176,7 +176,7 @@ def list_jobs(
     source_kind: SourceKind | None = Query(None, description="Filter by the kind of system"), q: str | None = Query(None, max_length=100, description="Part of the source name"),
     created_from: date | None = Query(None, description="Created on or after this day"), created_to: date | None = Query(None, description="Created on or before this day"),
     owner_id: uuid.UUID | None = None, sort: str = Query("created", pattern="^(created|updated|status|source|kind)$"), order: str = Query("desc", pattern="^(asc|desc)$"),
-    page: PageParams = Depends(), _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db),
+    page: PageParams = Depends(), _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function"),
 ) -> Page[JobOut]:
     stmt = select(Job).join(Source, Source.id == Job.source_id)
     if status_filter:
@@ -201,7 +201,7 @@ def list_jobs(
 
 
 @router.get("/{job_id}", response_model=JobOut, summary="One job")
-def get_job(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> JobOut:
+def get_job(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> JobOut:
     return _enrich(db, [_job(db, job_id)])[0]
 
 
@@ -228,7 +228,7 @@ def _queue(job: Job, stages: list[Stage], principal: Principal, request: Request
 
 
 @router.post("/{job_id}/run", response_model=Queued, status_code=status.HTTP_202_ACCEPTED, summary="Run the pipeline up to the review of the rules")
-def run_pipeline(job_id: uuid.UUID, request: Request, body: RunRequest | None = None, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> Queued:
+def run_pipeline(job_id: uuid.UUID, request: Request, body: RunRequest | None = None, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> Queued:
     body = body or RunRequest()
     job = _job(db, job_id)
     stages = body.stages or list(PIPELINE_TO_REVIEW)
@@ -238,7 +238,7 @@ def run_pipeline(job_id: uuid.UUID, request: Request, body: RunRequest | None = 
 
 @router.post("/{job_id}/stages/{stage}", response_model=Queued, status_code=status.HTTP_202_ACCEPTED, summary="Run one stage in the background")
 def run_one_stage(
-    job_id: uuid.UUID, stage: Stage, request: Request, body: StageRequest | None = None, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)
+    job_id: uuid.UUID, stage: Stage, request: Request, body: StageRequest | None = None, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")
 ) -> Queued:
     job = _job(db, job_id)
     target = body.target_schema if body else None
@@ -250,7 +250,7 @@ def run_one_stage(
 
 
 @router.post("/{job_id}/cancel", response_model=JobOut, summary="Stop a job that is not finished")
-def cancel_job(job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> JobOut:
+def cancel_job(job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> JobOut:
     """Marks the job as failed with the reason "cancelled". Stages that have not started will skip it. A stage that is running
     right now holds the job and is not interrupted: the call answers 409 and can be repeated when the stage has finished."""
     if db.get(Job, job_id) is None:
@@ -281,7 +281,7 @@ def _event_out(e: JobEvent) -> EventOut:
 @router.get("/{job_id}/events", response_model=EventList, summary="The events of a job, oldest first")
 def list_events(
     job_id: uuid.UUID, after: int = Query(0, ge=0, description="Only events with a larger id"), limit: int = Query(200, ge=1, le=1000),
-    _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db),
+    _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function"),
 ) -> EventList:
     _job(db, job_id)
     rows = db.scalars(select(JobEvent).where(JobEvent.job_id == job_id, JobEvent.id > after).order_by(JobEvent.id).limit(limit)).all()

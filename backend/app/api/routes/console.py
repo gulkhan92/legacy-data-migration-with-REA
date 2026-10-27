@@ -50,7 +50,7 @@ def _kpis(db: Session, start: datetime, end: datetime) -> dict[str, Any]:
 
 
 @router.get("/overview", summary="This organization's month: KPIs, jobs in progress and recent jobs")
-def overview(_: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def overview(_: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     today = datetime.now(UTC).date()
     start, end = _month(today)
     prev_start, _ = _month((start - timedelta(days=1)).date())
@@ -81,7 +81,7 @@ class NotificationOut(BaseModel):
 
 @router.get("/notifications", response_model=list[NotificationOut], summary="What happened lately to this organization's jobs")
 def notifications(
-    after: int = Query(0, ge=0, description="Only events with a larger id"), limit: int = Query(20, ge=1, le=100), _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)
+    after: int = Query(0, ge=0, description="Only events with a larger id"), limit: int = Query(20, ge=1, le=100), _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")
 ) -> list[NotificationOut]:
     """A job that finished, failed, was rolled back or is waiting for a person, and a stage that is waiting for something (not the routine progress notes)."""
     changed = (JobEvent.from_status != JobEvent.to_status) & JobEvent.to_status.in_(NOTABLE)
@@ -113,7 +113,7 @@ class MemoryOut(BaseModel):
 @router.get("/mapping-memory", response_model=Page[MemoryOut], summary="The mappings this organization has approved and that are reused on later jobs")
 def list_memory(
     q: str | None = Query(None, max_length=100, description="Part of the source description or the target field"), schema: str | None = Query(None, max_length=100),
-    page: PageParams = Depends(), _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db),
+    page: PageParams = Depends(), _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function"),
 ) -> Page[MemoryOut]:
     stmt = select(MappingMemory, TargetField, TargetSchema).join(TargetField, TargetField.id == MappingMemory.target_field_id).join(TargetSchema, TargetSchema.id == TargetField.schema_id)
     if schema:
@@ -129,7 +129,7 @@ def list_memory(
 
 
 @router.delete("/mapping-memory/{memory_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Forget one remembered mapping")
-def forget_memory(memory_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> Response:
+def forget_memory(memory_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> Response:
     memory = db.get(MappingMemory, memory_id)
     if memory is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mapping not found")

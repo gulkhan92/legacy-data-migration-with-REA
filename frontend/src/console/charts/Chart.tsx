@@ -48,5 +48,5 @@ export function Chart({ option, height, className }: { option: EChartsOption; he
   }, [signature, ready]);
 
   // The drawing is decorative for assistive technology: the summary and the table next to it carry the same information.
-  return <div ref={box} aria-hidden="true" className={cn("w-full", className)} style={{ height }} />;
+  return <div ref={box} data-chart="" aria-hidden="true" className={cn("w-full", className)} style={{ height }} />;
 }

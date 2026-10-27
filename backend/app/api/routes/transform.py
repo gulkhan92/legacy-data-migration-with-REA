@@ -61,7 +61,7 @@ class CodeMapRequest(BaseModel):
 
 
 @router.post("/mappings/approve-decided")
-def approve_decided(job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, int]:
+def approve_decided(job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, int]:
     job = _job(db, job_id)
     count = mapping_service.approve_decided(db, job, principal.user_id)
     record_audit(db, AuditAction.MAPPING_APPROVE, org_id=principal.org_id, user_id=principal.user_id, entity_type="job", entity_id=str(job.id), ip=client_ip(request),
@@ -71,7 +71,7 @@ def approve_decided(job_id: uuid.UUID, request: Request, principal: Principal = 
 
 @router.post("/mappings/{mapping_id}/approve")
 def approve_one(
-    job_id: uuid.UUID, mapping_id: uuid.UUID, body: ApproveRequest, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)
+    job_id: uuid.UUID, mapping_id: uuid.UUID, body: ApproveRequest, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")
 ) -> dict[str, Any]:
     job = _job(db, job_id)
     mapping = db.scalar(select(Mapping).where(Mapping.id == mapping_id, Mapping.job_id == job.id))
@@ -84,7 +84,7 @@ def approve_one(
 
 
 @router.post("/mappings/{mapping_id}/reject")
-def reject_one(job_id: uuid.UUID, mapping_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def reject_one(job_id: uuid.UUID, mapping_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     mapping = db.scalar(select(Mapping).where(Mapping.id == mapping_id, Mapping.job_id == job.id))
     if mapping is None:
@@ -99,7 +99,7 @@ def reject_one(job_id: uuid.UUID, mapping_id: uuid.UUID, request: Request, princ
 
 
 @router.post("/rules/generate")
-def generate_rules(job_id: uuid.UUID, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def generate_rules(job_id: uuid.UUID, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     try:
         result = service.generate(db, job)
@@ -109,14 +109,14 @@ def generate_rules(job_id: uuid.UUID, principal: Principal = Depends(require_rol
 
 
 @router.get("/rules")
-def list_rules(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> list[dict[str, Any]]:
+def list_rules(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> list[dict[str, Any]]:
     job = _job(db, job_id)
     rows = db.scalars(select(TransformRule).where(TransformRule.job_id == job.id).order_by(TransformRule.target_table, TransformRule.target_field)).all()
     return [_rule_out(r) for r in rows]
 
 
 @router.put("/rules/{rule_id}")
-def put_rule(job_id: uuid.UUID, rule_id: uuid.UUID, body: StepsRequest, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def put_rule(job_id: uuid.UUID, rule_id: uuid.UUID, body: StepsRequest, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     rule = rules_module.find_rule(db, job.id, rule_id)
     if rule is None:
@@ -132,7 +132,7 @@ def put_rule(job_id: uuid.UUID, rule_id: uuid.UUID, body: StepsRequest, principa
 
 
 @router.put("/rules/{rule_id}/code-map")
-def put_code_map(job_id: uuid.UUID, rule_id: uuid.UUID, body: CodeMapRequest, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def put_code_map(job_id: uuid.UUID, rule_id: uuid.UUID, body: CodeMapRequest, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     rule = rules_module.find_rule(db, job.id, rule_id)
     if rule is None:
@@ -165,7 +165,7 @@ def _cost(db: Session, job: Job, run: Any) -> dict[str, Any]:
 
 
 @router.post("/dry-run")
-def dry_run(job_id: uuid.UUID, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def dry_run(job_id: uuid.UUID, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     try:
         run = service.dry_run(db, job)
@@ -176,7 +176,7 @@ def dry_run(job_id: uuid.UUID, principal: Principal = Depends(require_role(Role.
 
 
 @router.post("/load")
-def load(job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def load(job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     try:
         outcome = service.load_job(db, job)
@@ -192,7 +192,7 @@ def load(job_id: uuid.UUID, request: Request, principal: Principal = Depends(req
 
 
 @router.post("/rollback")
-def rollback(job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def rollback(job_id: uuid.UUID, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     try:
         result = service.rollback_job(db, job)
@@ -203,7 +203,7 @@ def rollback(job_id: uuid.UUID, request: Request, principal: Principal = Depends
 
 
 @router.get("/reconciliation")
-def reconciliation(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def reconciliation(job_id: uuid.UUID, _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     report = service.get_report(db, job.id)
     if report is None:
@@ -216,7 +216,7 @@ def reconciliation(job_id: uuid.UUID, _: Principal = Depends(get_principal), db:
 @router.get("/quarantine")
 def quarantine(
     job_id: uuid.UUID, reason: str | None = None, table: str | None = None, limit: int = Query(50, ge=1, le=500), offset: int = Query(0, ge=0),
-    _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db),
+    _: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function"),
 ) -> dict[str, Any]:
     job = _job(db, job_id)
     total, rows = service.quarantine_page(db, job.id, reason, table, limit, offset)
@@ -245,7 +245,7 @@ EDITABLE = (JobStatus.MAPPED, JobStatus.AWAITING_REVIEW)
 
 @router.patch("/mappings/{mapping_id}", summary="Change the target or the transform hint of a mapping")
 def patch_mapping(
-    job_id: uuid.UUID, mapping_id: uuid.UUID, body: MappingPatch, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)
+    job_id: uuid.UUID, mapping_id: uuid.UUID, body: MappingPatch, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")
 ) -> dict[str, Any]:
     job = _job(db, job_id)
     mapping = db.scalar(select(Mapping).where(Mapping.id == mapping_id, Mapping.job_id == job.id))
@@ -271,7 +271,7 @@ def patch_mapping(
 
 
 @router.post("/mappings/bulk-approve", summary="Approve several mappings at once")
-def bulk_approve(job_id: uuid.UUID, body: BulkApprove, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def bulk_approve(job_id: uuid.UUID, body: BulkApprove, request: Request, principal: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     ids = list(dict.fromkeys(body.mapping_ids))
     found = {m.id: m for m in db.scalars(select(Mapping).where(Mapping.job_id == job.id, Mapping.id.in_(ids)))}
@@ -303,7 +303,7 @@ class PreviewRequest(BaseModel):
 
 
 @router.post("/transforms/preview", summary="Try a rule on a sample of the source without saving it")
-def preview_transform(job_id: uuid.UUID, body: PreviewRequest, _: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def preview_transform(job_id: uuid.UUID, body: PreviewRequest, _: Principal = Depends(require_role(Role.ANALYST)), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     job = _job(db, job_id)
     rule = db.scalar(select(TransformRule).where(TransformRule.job_id == job.id, TransformRule.target_table == body.target_table, TransformRule.target_field == body.target_field))
     if rule is None:
@@ -345,7 +345,7 @@ def _csv_rows(org_id: uuid.UUID, user_id: uuid.UUID, job_id: uuid.UUID, reason: 
 
 
 @router.get("/quarantine.csv", summary="Export the quarantined rows as CSV", response_class=StreamingResponse, responses={200: {"content": {"text/csv": {}}}})
-def quarantine_csv(job_id: uuid.UUID, reason: str | None = None, table: str | None = None, principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> StreamingResponse:
+def quarantine_csv(job_id: uuid.UUID, reason: str | None = None, table: str | None = None, principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> StreamingResponse:
     job = _job(db, job_id)
     headers = {"Content-Disposition": f'attachment; filename="quarantine-{job.id}.csv"', "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}
     return StreamingResponse(_csv_rows(principal.org_id, principal.user_id, job.id, reason, table), media_type="text/csv; charset=utf-8", headers=headers)

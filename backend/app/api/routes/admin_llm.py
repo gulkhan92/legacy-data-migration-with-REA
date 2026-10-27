@@ -59,13 +59,13 @@ def _settings_view(db: Session, principal: Principal) -> dict[str, Any]:
 
 
 @router.get("/llm-settings")
-def get_llm_settings(principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def get_llm_settings(principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     return _settings_view(db, principal)
 
 
 @router.put("/llm-settings")
 def put_llm_settings(
-    body: LlmSettingsIn, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)
+    body: LlmSettingsIn, request: Request, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")
 ) -> dict[str, Any]:
     before = DbStore(principal.org_id, make_session_factory()).org_settings()
     new = OrgLlmSettings(list(body.provider_order), body.job_token_budget, body.org_daily_token_budget, body.max_calls_per_job)
@@ -82,7 +82,7 @@ def put_llm_settings(
 @router.post("/llm-settings/test-connection")
 @limiter.limit("10/minute")
 def test_connection(
-    request: Request, body: TestConnectionIn, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)
+    request: Request, body: TestConnectionIn, principal: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")
 ) -> dict[str, Any]:
     llm = get_router()
     if not llm.providers[body.provider].configured:
@@ -91,7 +91,7 @@ def test_connection(
 
 
 @router.get("/llm-usage")
-def llm_usage(days: int = 7, _: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def llm_usage(days: int = 7, _: Principal = Depends(require_role()), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     since = datetime.now(UTC) - timedelta(days=max(1, min(days, 90)))
     day = func.date_trunc("day", LlmCall.created_at)
     ok, cache, failed = LlmCall.status == LlmCallStatus.OK, LlmCall.cache_hit.is_(True), LlmCall.status.notin_([LlmCallStatus.OK, LlmCallStatus.CACHE_HIT])

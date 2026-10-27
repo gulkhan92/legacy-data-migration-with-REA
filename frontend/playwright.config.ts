@@ -13,8 +13,12 @@ export default defineConfig({
   fullyParallel: true,
   retries: 0,
   reporter: [["list"]],
-  use: { baseURL, trace: "off", screenshot: "off" },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], channel: undefined } }],
+  use: { baseURL, trace: "off", screenshot: "off", actionTimeout: 30_000 },
+  projects: [
+    // Signs each demo role in once and keeps the session, so that the console tests do not hit the sign in rate limit.
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "chromium", testIgnore: /auth\.setup\.ts/, dependencies: ["setup"], use: { ...devices["Desktop Chrome"], channel: undefined } },
+  ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : { command: "npx vite preview --port 4173 --strictPort", url: baseURL, reuseExistingServer: true, timeout: 60_000 },

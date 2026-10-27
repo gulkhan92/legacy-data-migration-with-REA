@@ -7,3 +7,4 @@ node_modules/
 datasets/raw/
 backend/var/
 rea-runner/node_modules/
+.coverage

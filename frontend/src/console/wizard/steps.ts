@@ -64,12 +64,30 @@ export function progressOf(status: JobStatus): number {
   return done[status] / STEPS.length;
 }
 
-/** The furthest step a person may open: one past the step the job has reached is not allowed, going back to a finished step is. */
+/**
+ * The furthest step a person may open in a state. It is one past the step the job opens at when the next step is where the next
+ * action is taken: the dry run is started in the dry run step, and the load in the execute step.
+ */
+export function furthestStep(status: JobStatus): StepId {
+  switch (status) {
+    case "AWAITING_REVIEW":
+    case "DRY_RUN":
+      return "dryrun";
+    case "READY":
+    case "LOADING":
+    case "RECONCILING":
+    case "FAILED":
+      return "execute";
+    default:
+      return stepForStatus(status);
+  }
+}
+
+/** Going back to a finished step is always allowed; going ahead only as far as the state of the job allows. */
 export function reachable(status: JobStatus | null, id: StepId): boolean {
   if (status === null) return id === "source";
   if (id === "source") return true;
-  const limit = stepIndex(stepForStatus(status));
-  return stepIndex(id) <= limit;
+  return stepIndex(id) <= stepIndex(furthestStep(status));
 }
 
 // ------------------------------------------------------------------ the stage timeline of a job, from its events

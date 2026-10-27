@@ -83,7 +83,7 @@ def _midnight(day: date) -> datetime:
 
 
 @router.get("/subscription", summary="The current plan and this month's usage meter")
-def subscription(principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def subscription(principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     now = datetime.now(UTC)
     sub = metering.active_subscription(db, principal.org_id)
     catalogue = plans.load_plans(db, active_only=False)
@@ -104,7 +104,7 @@ def subscription(principal: Principal = Depends(get_principal), db: Session = De
 
 
 @router.get("/usage", summary="Usage events and the last twelve months")
-def usage(page: PageParams = Depends(), principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def usage(page: PageParams = Depends(), principal: Principal = Depends(get_principal), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     total = db.scalar(select(func.count()).select_from(UsageEvent)) or 0
     events = db.scalars(select(UsageEvent).order_by(UsageEvent.occurred_at.desc()).limit(page.limit).offset(page.offset)).all()
     month = func.date_trunc("month", UsageEvent.occurred_at)
@@ -119,7 +119,7 @@ def usage(page: PageParams = Depends(), principal: Principal = Depends(get_princ
 
 
 @router.post("/subscription/plan", summary="Change the plan, effective immediately (admin)")
-def change_plan(body: PlanChange, request: Request, principal: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)) -> dict[str, Any]:
+def change_plan(body: PlanChange, request: Request, principal: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function")) -> dict[str, Any]:
     target = db.scalar(select(Plan).where(Plan.code == body.plan_code, Plan.is_active.is_(True)))
     if target is None:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=f"Unknown plan: {body.plan_code}")
@@ -146,7 +146,7 @@ def _invoice_or_404(db: Session, invoice_id: uuid.UUID) -> Invoice:
 
 @router.get("/invoices", response_model=Page[InvoiceOut], summary="The organization's invoices, newest first (admin)")
 def list_invoices(
-    invoice_status: InvoiceStatus | None = Query(None, alias="status"), page: PageParams = Depends(), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)
+    invoice_status: InvoiceStatus | None = Query(None, alias="status"), page: PageParams = Depends(), _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function")
 ) -> Page[InvoiceOut]:
     stmt = select(Invoice)
     if invoice_status:
@@ -157,7 +157,7 @@ def list_invoices(
 
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceDetail, summary="One invoice with its lines, ready to print (admin)")
-def get_invoice(invoice_id: uuid.UUID, _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)) -> InvoiceDetail:
+def get_invoice(invoice_id: uuid.UUID, _: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function")) -> InvoiceDetail:
     invoice = _invoice_or_404(db, invoice_id)
     lines = db.scalars(select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id).order_by(InvoiceLine.kind, InvoiceLine.amount_cents)).all()
     sub = db.get(Subscription, invoice.subscription_id) if invoice.subscription_id else None
@@ -167,7 +167,7 @@ def get_invoice(invoice_id: uuid.UUID, _: Principal = Depends(admin_only), db: S
 
 
 @router.patch("/invoices/{invoice_id}", response_model=InvoiceOut, summary="Mark an invoice paid or void (admin)")
-def set_invoice_status(invoice_id: uuid.UUID, body: InvoiceStatusChange, request: Request, principal: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db)) -> Invoice:
+def set_invoice_status(invoice_id: uuid.UUID, body: InvoiceStatusChange, request: Request, principal: Principal = Depends(admin_only), db: Session = Depends(get_tenant_db, scope="function")) -> Invoice:
     invoice = _invoice_or_404(db, invoice_id)
     if invoice.status not in (InvoiceStatus.OPEN, InvoiceStatus.OVERDUE):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"A {invoice.status.value} invoice cannot be changed")
