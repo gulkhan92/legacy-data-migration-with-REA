@@ -19,6 +19,8 @@
   --teal: 0 163 163; /* #00A3A3, decoration */
   --teal-text: 0 111 111; /* text on light surfaces */
   --teal-soft: 224 245 245;
+  --violet: 91 63 214; /* #5B3FD6, accent for stage chips and highlights; text on violet-soft is 7:1 */
+  --violet-soft: 240 236 255;
 
   /* neutrals, light theme */
   --background: 255 255 255;
@@ -95,6 +97,8 @@
   --primary-foreground: 8 20 38;
   --teal-text: 70 205 205;
   --teal-soft: 10 52 58;
+  --violet: 170 150 255;
+  --violet-soft: 38 28 84;
   --ring: 120 170 255;
   --success: 72 200 125;
   --success-soft: 12 52 36;

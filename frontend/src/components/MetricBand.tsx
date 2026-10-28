@@ -37,7 +37,7 @@ export function MetricBand() {
   const stats = data ? statsFrom(data) : [];
 
   return (
-    <section aria-labelledby="metrics-heading" className="bg-navy py-12 text-white">
+    <section aria-labelledby="metrics-heading" className="bg-gradient-to-r from-navy via-navy-800 to-navy-700 py-12 text-white">
       <Container>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="metrics-heading" className="text-sm font-semibold uppercase tracking-wider text-teal">

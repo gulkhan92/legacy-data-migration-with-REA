@@ -22,23 +22,35 @@ export const stageIcons: Record<string, LucideIcon> = {
   analytics: BarChart3,
 };
 
+/** Each stage keeps one tint everywhere it appears: a soft background with a text color that passes 4.5:1 on it. */
+const stageTints = [
+  { chip: "bg-primary-soft text-primary-ink", bar: "bg-primary" },
+  { chip: "bg-teal-soft text-teal-text", bar: "bg-teal" },
+  { chip: "bg-violet-soft text-violet", bar: "bg-violet" },
+  { chip: "bg-success-soft text-success", bar: "bg-success" },
+  { chip: "bg-warning-soft text-warning", bar: "bg-warning" },
+  { chip: "bg-primary-soft text-primary-ink", bar: "bg-navy-700" },
+];
+
 export function CapabilityStrip() {
   return (
     <Section tone="muted" aria-labelledby="capabilities-heading">
       <SectionHeading
         eyebrow="The platform"
         title={<span id="capabilities-heading">Six stages, one pipeline</span>}
-        lede="Every step produces something a person can check: evidence, a confidence, a before and after, a reason, a report."
+        lede="Every step leaves something a person can check: the evidence, a confidence, a before and after, a reason, a report. Nothing is loaded until it has been approved."
       />
       <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {stages.map((stage) => {
+        {stages.map((stage, index) => {
+          const tint = stageTints[index % stageTints.length]!;
           const Icon = stageIcons[stage.id] ?? ScanSearch;
           return (
             <li key={stage.id}>
               <SiteLink to={`/platform#${stage.id}`} className="group block h-full rounded-lg focus-visible:ring-offset-surface-muted">
-                <Card className="h-full transition-shadow group-hover:shadow-md">
+                <Card className="relative h-full overflow-hidden transition-all group-hover:-translate-y-0.5 group-hover:shadow-md">
+                  <span className={`absolute inset-x-0 top-0 h-1 ${tint.bar}`} aria-hidden="true" />
                   <CardHeader>
-                    <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                    <span className={`mb-2 flex h-11 w-11 items-center justify-center rounded-lg ${tint.chip}`}>
                       <Icon className="h-6 w-6" aria-hidden="true" />
                     </span>
                     <CardTitle>{stage.name}</CardTitle>
@@ -62,11 +74,11 @@ export function CapabilityStrip() {
 export function IndustryTiles() {
   return (
     <Section aria-labelledby="industries-heading">
-      <SectionHeading eyebrow="Solutions" title={<span id="industries-heading">For systems nobody wants to touch</span>} lede="The same pipeline, applied to the kinds of software that outlive the people who built it." />
+      <SectionHeading eyebrow="Solutions" title={<span id="industries-heading">For systems nobody wants to touch</span>} lede="Inventory tools, clinic software, accounting packages: the kinds of software that outlive the people who built them. One pipeline reads them all." />
       <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {industries.map((industry) => (
           <li key={industry.slug}>
-            <SiteLink to={`/solutions/${industry.slug}`} className="group block overflow-hidden rounded-lg border border-border bg-surface-raised shadow-sm transition-shadow hover:shadow-md">
+            <SiteLink to={`/solutions/${industry.slug}`} className="group block overflow-hidden rounded-lg border border-border bg-surface-raised shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
               <img src={industry.image} width={640} height={400} alt="" loading="lazy" decoding="async" className="media-16x9 w-full object-cover" />
               <div className="p-5">
                 <h3 className="text-xl font-semibold group-hover:text-primary">{industry.name}</h3>
@@ -123,7 +135,7 @@ export function SecuritySummary() {
       />
       <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {practices.slice(0, 4).map((practice) => (
-          <li key={practice.id} className="rounded-lg border border-white/15 bg-white/5 p-5">
+          <li key={practice.id} className="rounded-lg border border-white/15 border-t-teal bg-white/5 p-5 border-t-2">
             <h3 className="text-lg font-semibold">{practice.title}</h3>
             <p className="mt-2 text-white/80">{practice.summary}</p>
           </li>
@@ -151,7 +163,7 @@ export function CaseStudies() {
           <li key={item.id}>
             <Card className="flex h-full flex-col">
               <CardHeader>
-                <Badge variant="teal" className="self-start">{item.label}</Badge>
+                <Badge variant="violet" className="self-start">{item.label}</Badge>
                 <CardTitle className="mt-2">{item.title}</CardTitle>
                 <CardDescription className="text-base">{item.summary}</CardDescription>
               </CardHeader>
@@ -200,10 +212,10 @@ export function FaqSection({ title = "Questions, answered" }: { title?: string }
   );
 }
 
-export function CtaBand({ title = "See a migration from start to finish", text = "Open the console and run one of the sample systems. It takes a few minutes." }: { title?: string; text?: string }) {
+export function CtaBand({ title = "See a migration from start to finish", text = "Open the console, pick one of the two sample systems and watch it go from an unknown file to a reconciled load. It takes a few minutes." }: { title?: string; text?: string }) {
   return (
     <section className="relative overflow-hidden bg-primary py-16 text-primary-foreground" aria-labelledby="cta-heading">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(40rem_20rem_at_100%_0%,rgb(0_163_163/0.5),transparent)]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(40rem_20rem_at_100%_0%,rgb(0_163_163/0.55),transparent),radial-gradient(30rem_18rem_at_0%_100%,rgb(91_63_214/0.45),transparent)]" aria-hidden="true" />
       <Container className="relative flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
         <div className="max-w-2xl">
           <h2 id="cta-heading" className="text-3xl font-bold text-white">{title}</h2>

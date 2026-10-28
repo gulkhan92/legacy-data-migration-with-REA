@@ -17,16 +17,17 @@ export default function Home() {
   });
   return (
     <>
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary-soft/70 to-background" aria-labelledby="hero-heading">
-        <Container className="grid items-center gap-12 py-14 md:py-20 lg:grid-cols-12">
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary-soft/80 via-violet-soft/40 to-background" aria-labelledby="hero-heading">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(36rem_22rem_at_90%_0%,rgb(0_163_163/0.16),transparent),radial-gradient(34rem_20rem_at_0%_10%,rgb(15_98_254/0.14),transparent)]" aria-hidden="true" />
+        <Container className="relative grid items-center gap-12 py-14 md:py-20 lg:grid-cols-12">
           <div className="lg:col-span-6">
             <Badge variant="teal" className="mb-5">Demonstration project with sample data</Badge>
             <h1 id="hero-heading" className="text-5xl font-bold">
-              Move decades of legacy data into modern systems, without a rewrite
+              Move decades of legacy data into modern systems, <span className="text-primary">without a rewrite</span>
             </h1>
             <p className="mt-6 max-w-xl text-xl text-foreground-muted">
-              LegacyLift reads old databases and desktop applications without running them, maps every column to a clean target schema, and loads the result with a report that
-              accounts for every row.
+              LegacyLift reads old databases and desktop applications without running them, works out what every column means, maps it to a clean target schema, and loads the
+              result with a report that accounts for every row.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg">
@@ -38,7 +39,12 @@ export default function Home() {
                 <SiteLink to="/platform">Explore the platform</SiteLink>
               </Button>
             </div>
-            <p className="mt-5 text-sm text-foreground-muted">Static analysis only. Nothing you upload is ever executed.</p>
+            <ul className="mt-8 flex flex-wrap gap-2" aria-label="Guarantees">
+              <li><Badge variant="primary">Nothing you upload is executed</Badge></li>
+              <li><Badge variant="teal">Every row accounted for</Badge></li>
+              <li><Badge variant="violet">A person approves before any load</Badge></li>
+              <li><Badge variant="success">Tenant isolation in the database</Badge></li>
+            </ul>
           </div>
           <div className="lg:col-span-6">
             <HeroPreview />

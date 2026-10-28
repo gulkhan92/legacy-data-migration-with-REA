@@ -13,6 +13,7 @@ export default {
         navy: { DEFAULT: channel("navy"), 800: channel("navy-800"), 700: channel("navy-700") },
         primary: { DEFAULT: channel("primary"), hover: channel("primary-hover"), soft: channel("primary-soft"), ink: channel("primary-ink"), foreground: channel("primary-foreground") },
         teal: { DEFAULT: channel("teal"), text: channel("teal-text"), soft: channel("teal-soft") },
+        violet: { DEFAULT: channel("violet"), soft: channel("violet-soft") },
         background: channel("background"),
         surface: { DEFAULT: channel("surface"), muted: channel("surface-muted"), raised: channel("surface-raised") },
         foreground: { DEFAULT: channel("foreground"), muted: channel("foreground-muted"), subtle: channel("foreground-subtle") },
