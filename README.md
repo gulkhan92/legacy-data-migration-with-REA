@@ -13,34 +13,6 @@
 
 ---
 
-## Table of contents
-
-1. [Overview](#overview)
-2. [Objectives](#objectives)
-3. [What we build](#what-we-build)
-4. [How it helps](#how-it-helps)
-5. [Architecture](#architecture)
-6. [The migration pipeline](#the-migration-pipeline)
-7. [Features](#features)
-8. [Technology stack](#technology-stack)
-9. [Repository structure](#repository-structure)
-10. [Getting started](#getting-started)
-11. [Demo accounts](#demo-accounts)
-12. [Using the console](#using-the-console)
-13. [Datasets](#datasets)
-14. [Evaluation results](#evaluation-results)
-15. [Token efficiency](#token-efficiency)
-16. [Security and tenant isolation](#security-and-tenant-isolation)
-17. [Dashboards](#dashboards)
-18. [Testing](#testing)
-19. [API reference](#api-reference)
-20. [Limitations](#limitations)
-21. [Roadmap](#roadmap)
-22. [Troubleshooting](#troubleshooting)
-23. [Attributions and licenses](#attributions-and-licenses)
-
----
-
 ## Overview
 
 LegacyLift is a platform that moves data out of legacy systems whose structure nobody has documented. Given a database file, or a compiled desktop application together with its proprietary data file, it works out how the data is stored, finds the quality problems in it, proposes a mapping to a modern target schema, lets a person review that mapping, rehearses the transformation on a sample, loads the result, and proves with a reconciliation report that nothing was lost or changed without a record.
